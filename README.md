@@ -43,7 +43,7 @@ ohne Build-Schritt, ohne Abhängigkeiten. Einfach `index.html` öffnen und spiel
 * Übungsmodus mit manuellen und automatischen Checkpoints und eigener Musik
 * Fortschritt (Normal-/Übungsmodus), Versuche, Sprünge und Statistiken werden im Browser gespeichert
 
-**15 Level** von *Easy* bis *Demon*:
+**19 Level** von *Easy* bis *Extreme Demon* – plus ein geheimes Bonus-Level:
 
 | # | Level | Schwierigkeit | Schwerpunkt |
 | --- | --- | --- | --- |
@@ -61,7 +61,12 @@ ohne Build-Schritt, ohne Abhängigkeiten. Einfach `index.html` öffnen und spiel
 | 12 | Cycle Core | Insane ★9 | Robot, Spider |
 | 13 | Hyper Drive | Insane ★10 | Swing, 3x |
 | 14 | Velocity | Insane ★10 | alle Geschwindigkeiten von 0,5x bis 4x |
-| 15 | Demon Gate | Demon ★12 | alles zusammen |
+| 15 | Clockwork | Insane ★11 | Robot, Spider, UFO, Orb-/Pad-Kombos, bewegliche Sägen |
+| 16 | Demon Gate | Demon ★12 | alles zusammen |
+| 17 | Nightmare | Hard Demon ★13 | 2x–4x, Dual, Spiegel, enge Tunnel |
+| 18 | Overload | Insane Demon ★14 | 3x/4x-Wave, Teleport-Fallen, Mini- und Dual-Wave |
+| 19 | Event Horizon | Extreme Demon ★15 | das Finale: alle Modi, Dash-Orbs, Dual, Spiegel, Teleport *(in Arbeit)* |
+| ? | The Challenge | Demon ★10 | geheim – Code im Vault: `the challenge` |
 
 Jedes Level wurde automatisch mit einem Solver geprüft: es ist schaffbar, alle drei Münzen sind in einem
 Durchlauf einsammelbar, kein Klick erfordert ein Zeitfenster unter 3 Frames (bei 60 FPS) und kein Portal
@@ -98,7 +103,8 @@ css/style.css       Menüs im Geometry-Dash-Stil
 js/util.js          Hilfsfunktionen (Farben, RNG, Speicher)
 js/objects.js       Objektkatalog mit Hitboxen
 js/levelfmt.js      ASCII-Levelformat und Generatoren
-js/levels.js        die 15 eingebauten Level
+js/levels.js        die 15 klassischen Level
+js/levels/*.js      weitere Level (je eine Datei, mit eigenem Song)
 js/engine.js        deterministische Physik (240 Hz), Kollisionen, Trigger
 js/game.js          Spielsitzung: Kamera, Tod/Neustart, Übungsmodus, Effekte
 js/render.js        Canvas-Renderer, Partikel, HUD
