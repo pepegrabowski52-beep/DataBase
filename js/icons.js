@@ -204,11 +204,23 @@
       g.save();
       g.scale(s, s);
       g.translate(20, 20);
-      const cols = { auto: '#ffcc33', easy: '#3fb7ff', normal: '#4fe04f', hard: '#ffb92e', harder: '#ff4d3a', insane: '#ff4dd8', demon: '#c41f3a' };
+      const cols = {
+        auto: '#ffcc33', easy: '#3fb7ff', normal: '#4fe04f', hard: '#ffb92e', harder: '#ff4d3a', insane: '#ff4dd8',
+        demon: '#c41f3a', harddemon: '#a0101e', insanedemon: '#8a1060', extremedemon: '#3a0a0a',
+      };
       const c = cols[diff] || '#999';
-      if (diff === 'demon') {
-        P(g, [-15, -8, -19, -19, -8, -13], '#ff5a3a', 2);
-        P(g, [15, -8, 19, -19, 8, -13], '#ff5a3a', 2);
+      // demon tiers: bigger horns and a fiery aura the harder it gets
+      const tier = { demon: 0, harddemon: 1, insanedemon: 2, extremedemon: 3 }[diff];
+      if (tier != null) {
+        if (tier >= 2) {
+          const aura = g.createRadialGradient(0, 1, 10, 0, 1, 22);
+          aura.addColorStop(0, tier === 3 ? 'rgba(255,90,20,0.75)' : 'rgba(255,60,200,0.6)');
+          aura.addColorStop(1, 'rgba(255,60,20,0)');
+          C(g, 0, 1, 22, aura, 0);
+        }
+        const h = 11 + tier * 2.5, hc = tier === 3 ? '#ff8a1a' : tier === 2 ? '#ff4dd8' : '#ff5a3a';
+        P(g, [-15, -8, -15 - tier, -8 - h, -8, -13], hc, 2);
+        P(g, [15, -8, 15 + tier, -8 - h, 8, -13], hc, 2);
       }
       C(g, 0, 1, 15, c, 2.5);
       const glow = g.createRadialGradient(-4, -4, 2, 0, 0, 15);
@@ -234,8 +246,10 @@
         P(g, [-6, 6, 6, 6, 4, 10, -4, 10], '#fff', 1.6);
       } else {
         eye(-5, -3, true); eye(5, -3, true);
+        if (tier === 3) { C(g, -5, -1.5, 1.6, '#ff3a1a', 0); C(g, 5, -1.5, 1.6, '#ff3a1a', 0); }
         P(g, [-8, 5, 8, 5, 6, 11, -6, 11], K, 0);
         P(g, [-6, 5, -4, 8, -2, 5], '#fff', 0); P(g, [2, 5, 4, 8, 6, 5], '#fff', 0);
+        if (tier >= 1) { P(g, [-1, 5, 0, 9, 1, 5], '#fff', 0); }
       }
       g.restore();
     },

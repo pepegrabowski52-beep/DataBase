@@ -4,6 +4,8 @@
  *   node tools/solve.js            -> solve all built-in levels
  *   node tools/solve.js neon -v    -> one level, verbose
  *   node tools/solve.js --file my.json   (level exported from the editor as JSON)
+ *   node tools/solve.js neon --modes     -> also list game mode / speed / corridor changes along the solution
+ *   node tools/solve.js neon --min 2     -> only report clicks with a timing window under 2 frames
  *
  * Search: breadth-first over 60 Hz input frames (hold / release), 4 physics sub-steps
  * per frame, states de-duplicated on quantised (y, vy, mode, ...) and capped per frame. */
@@ -13,7 +15,11 @@ const path = require('path');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
-for (const f of ['js/util.js', 'js/objects.js', 'js/levelfmt.js', 'js/engine.js', 'js/levels.js']) {
+// the engine and every level file, in the order index.html loads them (rendering / UI scripts are skipped)
+const SCRIPTS = [...fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').matchAll(/<script src="([^"]+)"/g)]
+  .map((m) => m[1])
+  .filter((f) => /^js\/(util|objects|levelfmt|engine|levels)\.js$/.test(f) || /^js\/levels\//.test(f));
+for (const f of SCRIPTS) {
   vm.runInThisContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), { filename: f });
 }
 const GD = globalThis.GD;
@@ -306,6 +312,18 @@ function main() {
       }
       if (t.def) showSeg(t.def, r.bestX / 30);
       continue;
+    }
+    if (args.includes('--modes')) {
+      // mode / speed / gravity / corridor changes along the solution
+      const w = new GD.World(t.level, {});
+      let last = '';
+      for (let f = 0; f < r.inputs.length && !w.p.done; f++) {
+        w.setHold(!!r.inputs[f]);
+        for (let k = 0; k < SUB; k++) w.step();
+        const p = w.p;
+        const m = `${p.mode}${p.mini ? '(mini)' : ''} gr=${p.gr}${w.p2 ? ' DUAL' : ''}${w.mirror ? ' MIRROR' : ''} speed=${['0.5x', '1x', '2x', '3x', '4x'][p.spd]} corridor=${w.bnd.ceil == null ? 'none' : w.bnd.floor / 30 + '..' + w.bnd.ceil / 30}`;
+        if (m !== last) { console.log(`   ${(f / 60).toFixed(1).padStart(5)}s block ${(p.x / 30).toFixed(1).padStart(6)}  ${m}`); last = m; }
+      }
     }
     const missed = portalAudit(t.level, r.inputs);
     if (missed.length) {

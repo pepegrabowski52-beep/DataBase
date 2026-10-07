@@ -1426,4 +1426,14 @@
       10, '^', 16,
     ],
   });
+
+  // ===================================================================== helpers for js/levels/*.js
+  /** Add a level after another one (or at the end when that one does not exist). */
+  GD.addLevel = function (def, afterId) {
+    const i = afterId ? GD.LEVELS.findIndex((l) => l.id === afterId) : -1;
+    if (i < 0) GD.LEVELS.push(def);
+    else GD.LEVELS.splice(i + 1, 0, def);
+  };
+  // Map building helpers shared with the level files in js/levels/ (see README "Levelformat").
+  GD.LH = { col, pulse, enter, exit, stack, spiderAlt, PAT, ball, mirror, spd };
 })(typeof window !== 'undefined' ? window : globalThis);

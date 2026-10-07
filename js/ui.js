@@ -5,7 +5,10 @@
   const U = GD.U;
   const $ = (id) => document.getElementById(id);
 
-  const DIFF_NAMES = { auto: 'Auto', easy: 'Easy', normal: 'Normal', hard: 'Hard', harder: 'Harder', insane: 'Insane', demon: 'Demon' };
+  const DIFF_NAMES = {
+    auto: 'Auto', easy: 'Easy', normal: 'Normal', hard: 'Hard', harder: 'Harder', insane: 'Insane',
+    demon: 'Demon', harddemon: 'Hard Demon', insanedemon: 'Insane Demon', extremedemon: 'Extreme Demon',
+  };
   const TIPS = [
     'Tip: Hold the jump button to keep jumping when you land.',
     'Tip: Practice mode lets you place checkpoints with Z (remove with X).',

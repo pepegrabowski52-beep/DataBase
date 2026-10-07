@@ -65,7 +65,9 @@
     editor: { name: 'Editor', bpm: 110, root: 57, scale: 'dorian', prog: [0, 3, 6, 4], seed: 3, lead: 'pluck', bass: 'long', drums: 'none', arr: 'chill', loopFrom: 0 },
   };
   GD.SONGS = SONGS;
-  GD.SONG_LIST = ['neon', 'back', 'polar', 'dry', 'slope', 'base', 'rolling', 'twin', 'hover', 'wave', 'glass', 'cycle', 'hyper', 'velocity', 'demon'];
+  // levels in js/levels/ bring their own song definition (def.songDef)
+  for (const def of GD.LEVELS || []) if (def.songDef && !SONGS[def.song]) SONGS[def.song] = def.songDef;
+  GD.SONG_LIST = (GD.LEVELS || []).map((l) => l.song).filter((id, i, a) => SONGS[id] && a.indexOf(id) === i);
 
   const DRUMS = {
     four: { kick: 'x...x...x...x...', snare: '....x.......x...', hat: '..x...x...x...x.', ohat: '......x.......x.' },
