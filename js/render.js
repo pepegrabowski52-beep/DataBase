@@ -120,6 +120,43 @@
       for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if ((i + j) % 2 === 0) g.fillRect(-15 + i * 10, -15 + j * 10, 10, 10);
       edge(g, rgb, -15, -15, 30, 30);
     },
+    slope(g, rgb) {
+      ART.slopeShape(g, rgb, 15);
+    },
+    slopeL(g, rgb) {
+      ART.slopeShape(g, rgb, 30);
+    },
+    slopeShape(g, rgb, hw) {
+      // solid below a line rising to the right (flips / rotation give the other orientations)
+      g.beginPath();
+      g.moveTo(-hw, 15);
+      g.lineTo(hw, 15);
+      g.lineTo(hw, -15);
+      g.closePath();
+      const gr = g.createLinearGradient(0, -15, 0, 15);
+      gr.addColorStop(0, '#161616');
+      gr.addColorStop(1, '#000');
+      g.fillStyle = gr;
+      g.fill();
+      g.save();
+      g.clip();
+      const ig = g.createLinearGradient(-hw * 0.3, -15 * 0.3, hw * 0.3, 15 * 0.3);
+      ig.addColorStop(0, rgba(rgb, 0.3));
+      ig.addColorStop(0.5, rgba(rgb, 0.04));
+      ig.addColorStop(1, rgba(rgb, 0));
+      g.fillStyle = ig;
+      g.fillRect(-hw, -15, hw * 2, 30);
+      g.restore();
+      g.beginPath();
+      g.moveTo(-hw + 1.5, 14.2);
+      g.lineTo(hw - 0.8, 14.2);
+      g.lineTo(hw - 0.8, -14.2);
+      g.closePath();
+      g.lineWidth = 1.6;
+      g.lineJoin = 'miter';
+      g.strokeStyle = css(rgb);
+      g.stroke();
+    },
     slab(g, rgb) {
       darkBody(g, -15, -15, 30, 15);
       innerGlow(g, rgb, -15, -15, 30, 15, 0.3);
@@ -465,7 +502,7 @@
   };
 
   const SPRITE_SIZE = {
-    saw: (d) => (d.sr || 28) * 2 + 6, orb: () => 54, orbring: () => 42, portal: () => 104, gportal: () => 84,
+    saw: (d) => (d.sr || 28) * 2 + 6, slopeL: () => 66, orb: () => 54, orbring: () => 42, portal: () => 104, gportal: () => 84,
     sportal: () => 100, xportal: () => 104, speed: () => 52, coin: () => 48, glow: () => 88, cloud: () => 56,
   };
 

@@ -396,6 +396,10 @@
           w.coinsGot.forEach((c, i) => {
             if (c && !rec.coins[i]) { rec.coins[i] = true; this.result.newCoins++; }
           });
+          if (this.info.user) {
+            const ul = this.app.userLevels.find((l) => l.id === this.info.id);
+            if (ul && !ul.verified) { ul.verified = true; this.app.persistUser(); }
+          }
         }
         this.app.persist();
       }

@@ -20,6 +20,7 @@
   const CLS = { solid: 'solid', hazard: 'hazard', orb: 'inter', pad: 'inter', portal: 'inter', coin: 'inter' };
 
   GD.PH = { SPEEDS, G, JUMP, DT, CORRIDOR };
+  GD.slopeLine = slopeLine;
 
   function copyOff(off) {
     const o = {};
@@ -27,7 +28,22 @@
     return o;
   }
 
+  /** Surface height of a slope at x (clamped to the slope's extent). */
+  function slopeLine(o, x) {
+    const t = ((x < o.x0 ? o.x0 : x > o.x1 ? o.x1 : x) - o.x0) / (o.x1 - o.x0);
+    return o.sRise ? o.y0 + (o.y1 - o.y0) * t : o.y1 - (o.y1 - o.y0) * t;
+  }
+
+  /** Does the box overlap the solid triangle of a slope? */
+  function slopeHit(o, x0, y0, x1, y1) {
+    const xa = x0 > o.x0 ? x0 : o.x0, xb = x1 < o.x1 ? x1 : o.x1;
+    if (xa >= xb || y1 <= o.y0 || y0 >= o.y1) return false;
+    const la = slopeLine(o, xa), lb = slopeLine(o, xb);
+    return o.sBelow ? Math.max(la, lb) > y0 : Math.min(la, lb) < y1;
+  }
+
   function hit(o, x0, y0, x1, y1) {
+    if (o.sl) return slopeHit(o, x0, y0, x1, y1);
     if (o.lh.k === 'r') return x1 > o.x0 && x0 < o.x1 && y1 > o.y0 && y0 < o.y1;
     const cx = o.cx < x0 ? x0 : o.cx > x1 ? x1 : o.cx;
     const cy = o.cy < y0 ? y0 : o.cy > y1 ? y1 : o.cy;
@@ -71,6 +87,18 @@
           c: src.c || null, z: src.z || 0, ox: 0, oy: 0,
         };
         o.lh = GD.localHitbox(o, d);
+        if (d.slope) {
+          // slopes ignore rotation: it is folded into horizontal / vertical flips
+          const r = ((Math.round(o.r / 90) * 90) % 360 + 360) % 360;
+          let fx = o.fx, fy = o.fy;
+          if (r === 90 || r === 180) fx = !fx;
+          if (r === 270 || r === 180) fy = !fy;
+          o.lh = { k: 'r', x: 0, y: 0, w: d.slope.w * o.s, h: d.slope.h * o.s };
+          o.sl = true;
+          o.sRise = fx === fy;
+          o.sBelow = !fy;
+          o.sk = ((o.sRise ? 1 : -1) * d.slope.h) / d.slope.w;
+        }
         o.vr = (d.vr || 30) * o.s;
         objs.push(o);
       }
@@ -450,6 +478,8 @@
         case 'cube':
           if (p.onGround && hold) {
             p.vy = p.gr * JUMP * ms;
+            const lv = SPEEDS[p.spd] * (p.slopeK || 0);
+            if (lv * p.gr > 0) p.vy += lv * 0.5;
             p.onGround = false;
             p.buffer = false;
             p.jumps++;
@@ -549,9 +579,12 @@
       const list = this.query(x0, x1, 'solid');
       for (const o of list) {
         if (o.lh.k !== 'r' || o.x1 <= x0 || o.x0 >= x1) continue;
+        const sy = o.sl ? slopeLine(o, p.x) : 0;
+        const bottom = o.sl && !o.sBelow ? sy : o.y0;
+        const top = o.sl && o.sBelow ? sy : o.y1;
         if (up) {
-          if (o.y0 >= p.y + hw - 2 && o.y0 < target) target = o.y0;
-        } else if (o.y1 <= p.y - hw + 2 && o.y1 > target) target = o.y1;
+          if (bottom >= p.y + hw - 2 && bottom < target) target = bottom;
+        } else if (top <= p.y - hw + 2 && top > target) target = top;
       }
       const from = p.y;
       p.gr = -p.gr;
@@ -571,9 +604,12 @@
     // ------------------------------------------------------------ collisions
     collide(hw) {
       const p = this.p, b = this.bnd;
+      const wasGround = p.onGround;
+      const prevK = p.slopeK || 0;
       p.onGround = false;
       p.onCeil = false;
       p.gobj = null;
+      p.slopeK = 0;
       if (p.y - hw < b.floor) {
         p.y = b.floor + hw;
         if (p.gr > 0) {
@@ -593,50 +629,88 @@
         }
       }
       const tol = p.mini ? 6 : 10;
+      const speed = SPEEDS[p.spd];
       const list = this.query(p.x - hw, p.x + hw, 'solid');
-      if (!list.length) return;
-      let x0 = p.x - hw, x1 = p.x + hw, y0 = p.y - hw, y1 = p.y + hw;
-      let best = null, by = 0;
-      for (const o of list) {
-        if (!hit(o, x0, y0, x1, y1)) continue;
-        if (p.gr > 0) {
-          if (p.vy <= 0 && y0 >= o.y1 - tol && (best === null || o.y1 > by)) { best = o; by = o.y1; }
-        } else if (p.vy >= 0 && y1 <= o.y0 + tol && (best === null || o.y0 < by)) { best = o; by = o.y0; }
-      }
-      if (best) {
-        p.y = p.gr > 0 ? by + hw : by - hw;
-        p.vy = 0;
-        p.onGround = true;
-        p.gobj = best.id;
-        y0 = p.y - hw;
-        y1 = p.y + hw;
-      }
-      if (CEIL[p.mode]) {
+      if (list.length) {
+        let x0 = p.x - hw, x1 = p.x + hw, y0 = p.y - hw, y1 = p.y + hw;
+        let best = null, by = 0, bk = 0;
         for (const o of list) {
-          if (o === best || !hit(o, x0, y0, x1, y1)) continue;
+          if (o.sl) {
+            // slopes: stand on the surface under the player's centre (and stick to it going downhill)
+            const sy = slopeLine(o, p.x);
+            const stol = tol + Math.abs(o.sk) * speed * DT * 2;
+            const stick = Math.abs(o.sk) * speed * DT + 2;
+            const within = p.x >= o.x0 - 1 && p.x <= o.x1 + 1;
+            if (p.gr > 0 && o.sBelow) {
+              const pen = sy - y0;
+              const touch = hit(o, x0, y0, x1, y1) || (wasGround && within && pen <= 0 && -pen <= stick);
+              if (touch && p.vy <= 0 && pen <= stol && (best === null || sy > by)) { best = o; by = sy; bk = o.sk; }
+            } else if (p.gr < 0 && !o.sBelow) {
+              const pen = y1 - sy;
+              const touch = hit(o, x0, y0, x1, y1) || (wasGround && within && pen <= 0 && -pen <= stick);
+              if (touch && p.vy >= 0 && pen <= stol && (best === null || sy < by)) { best = o; by = sy; bk = o.sk; }
+            } else if (hit(o, x0, y0, x1, y1)) {
+              // flat side of a slope behaves like a block face
+              if (p.gr > 0 && p.vy <= 0 && y0 >= o.y1 - tol && !o.sBelow && (best === null || o.y1 > by)) { best = o; by = o.y1; bk = 0; }
+              if (p.gr < 0 && p.vy >= 0 && y1 <= o.y0 + tol && o.sBelow && (best === null || o.y0 < by)) { best = o; by = o.y0; bk = 0; }
+            }
+            continue;
+          }
+          if (!hit(o, x0, y0, x1, y1)) continue;
           if (p.gr > 0) {
-            if (p.vy >= 0 && y1 <= o.y0 + tol) {
-              p.y = o.y0 - hw;
+            if (p.vy <= 0 && y0 >= o.y1 - tol && (best === null || o.y1 > by)) { best = o; by = o.y1; bk = 0; }
+          } else if (p.vy >= 0 && y1 <= o.y0 + tol && (best === null || o.y0 < by)) { best = o; by = o.y0; bk = 0; }
+        }
+        if (best) {
+          p.y = p.gr > 0 ? by + hw : by - hw;
+          p.vy = 0;
+          p.onGround = true;
+          p.gobj = best.id;
+          p.slopeK = bk;
+          y0 = p.y - hw;
+          y1 = p.y + hw;
+        }
+        if (CEIL[p.mode]) {
+          for (const o of list) {
+            if (o === best || !hit(o, x0, y0, x1, y1)) continue;
+            if (o.sl && ((p.gr > 0 && !o.sBelow) || (p.gr < 0 && o.sBelow))) {
+              const sy = slopeLine(o, p.x);
+              const stol = tol + Math.abs(o.sk) * speed * DT * 2;
+              if (p.gr > 0 && p.vy >= 0 && y1 - sy <= stol) { p.y = sy - hw; p.vy = 0; p.onCeil = true; }
+              else if (p.gr < 0 && p.vy <= 0 && sy - y0 <= stol) { p.y = sy + hw; p.vy = 0; p.onCeil = true; }
+              y0 = p.y - hw;
+              y1 = p.y + hw;
+              continue;
+            }
+            if (p.gr > 0) {
+              if (p.vy >= 0 && y1 <= o.y0 + tol) {
+                p.y = o.y0 - hw;
+                p.vy = 0;
+                p.onCeil = true;
+                y0 = p.y - hw;
+                y1 = p.y + hw;
+              }
+            } else if (p.vy <= 0 && y0 >= o.y1 - tol) {
+              p.y = o.y1 + hw;
               p.vy = 0;
               p.onCeil = true;
               y0 = p.y - hw;
               y1 = p.y + hw;
             }
-          } else if (p.vy <= 0 && y0 >= o.y1 - tol) {
-            p.y = o.y1 + hw;
-            p.vy = 0;
-            p.onCeil = true;
-            y0 = p.y - hw;
-            y1 = p.y + hw;
+          }
+        }
+        const ih = hw * 0.3;
+        for (const o of list) {
+          if (hit(o, p.x - ih, p.y - ih, p.x + ih, p.y + ih)) {
+            this.die(o);
+            return;
           }
         }
       }
-      const ih = hw * 0.3;
-      for (const o of list) {
-        if (hit(o, p.x - ih, p.y - ih, p.x + ih, p.y + ih)) {
-          this.die(o);
-          return;
-        }
+      // leaving the end of an upward slope launches the player with the slope's speed
+      if (!p.onGround && wasGround && prevK) {
+        const lv = speed * prevK;
+        if (lv * p.gr > 0 && p.vy * p.gr < lv * p.gr) p.vy = lv;
       }
     }
 
@@ -648,10 +722,24 @@
       if (b.ceil != null && p.y + hw > b.ceil) { p.y = b.ceil - hw; p.onGround = p.gr < 0; p.onCeil = p.gr > 0; }
       const list = this.query(p.x - hw, p.x + hw, 'solid');
       if (!list.length) return;
-      const tol = Math.abs(p.vy) * dt + 1.5;
+      let tol = Math.abs(p.vy) * dt + 1.5;
+      // resolve slopes first so a slope-to-block transition is smooth
+      if (list.some((o) => o.sl)) list.sort((a, b) => (b.sl ? 1 : 0) - (a.sl ? 1 : 0));
+      let onSlope = false;
       for (const o of list) {
+        if (!o.sl && onSlope) { tol += 4; onSlope = false; }
         const x0 = p.x - hw, x1 = p.x + hw, y0 = p.y - hw, y1 = p.y + hw;
         if (!hit(o, x0, y0, x1, y1)) continue;
+        if (o.sl) {
+          // the wave slides along slope surfaces (highest surface point under its hitbox)
+          const la = slopeLine(o, x0 > o.x0 ? x0 : o.x0), lb = slopeLine(o, x1 < o.x1 ? x1 : o.x1);
+          const sy = o.sBelow ? Math.max(la, lb) : Math.min(la, lb);
+          const stol = tol + Math.abs(o.sk) * SPEEDS[p.spd] * dt + 1;
+          if (o.sBelow && sy - y0 <= stol && sy - y0 > -stol) { p.y = sy + hw; onSlope = true; if (p.gr > 0) p.onGround = true; else p.onCeil = true; continue; }
+          if (!o.sBelow && y1 - sy <= stol && y1 - sy > -stol) { p.y = sy - hw; onSlope = true; if (p.gr < 0) p.onGround = true; else p.onCeil = true; continue; }
+          this.die(o);
+          return;
+        }
         if (o.lh.k === 'r' && p.vy <= 0 && y0 >= o.y1 - tol) {
           p.y = o.y1 + hw;
           if (p.gr > 0) p.onGround = true; else p.onCeil = true;
@@ -851,7 +939,8 @@
         case 'cube':
           if (!p.onGround) p.rot += p.gr * (p.mini ? 520 : 462) * dt;
           else {
-            const tgt = Math.round(p.rot / 90) * 90;
+            const a = p.slopeK ? (-Math.atan(p.slopeK) * 180) / Math.PI : 0;
+            const tgt = a + Math.round((p.rot - a) / 90) * 90;
             p.rot += (tgt - p.rot) * Math.min(1, dt * 28);
           }
           break;

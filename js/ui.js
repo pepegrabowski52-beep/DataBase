@@ -45,6 +45,11 @@
 
     init(app) {
       this.app = app;
+      // buttons should not keep keyboard focus (Space/Enter are game controls)
+      document.addEventListener('click', (e) => {
+        const b = e.target && e.target.closest && e.target.closest('button');
+        if (b) b.blur();
+      });
       document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => { this.click('back'); this.show(b.dataset.back); }));
       $('b-play').addEventListener('click', () => { this.click(); this.show('levels'); });
       $('b-icons').addEventListener('click', () => { this.click(); this.show('icons'); });

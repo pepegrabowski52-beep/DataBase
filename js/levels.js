@@ -1003,6 +1003,22 @@
     gaps: `
       ##...##...##...
       ##^^^##^^^##^^^`,
+    // slopes
+    ramp1: `
+      ........^........
+      ...../######&....`,
+    ramp2: `
+      ......./..........
+      ....../#^^^^^....
+      ...../##..........`,
+    ramp3: `
+      ............../&...
+      ......^....../##&..
+      ...../###&../####&.`,
+    ramp4: `
+      ......./##&......
+      ...../##..##&.^^..
+      ..../####..###&...`,
   };
   const ball = (len, seed, coinCol) => {
     // alternating floor / ceiling spike groups for an 8 high ball corridor
@@ -1138,4 +1154,14 @@
     exit('C'), ['.', '.', '.', '.', '.', '.', '.', '.', 'z', '.'].join('\n'),
     12, '^^', 10,
   ]);
+
+  // ramps and slope corridors
+  extend('neon', 2, [10, PAT.ramp1, 10]);
+  extend('back', 2, [10, PAT.ramp2, 10]);
+  extend('polar', 2, [10, PAT.ramp3, 10]);
+  extend('dry', 2, [10, PAT.ramp4, 10, PAT.ramp1, 10]);
+  extend('base', 2, [10, PAT.ramp1, 10, PAT.ramp3, 10]);
+  extend('cycle', 2, [10, PAT.ramp4, 10]);
+  extend('wave', 2, [10, enter('V'), GD.slopeWave({ len: 60, seed: 89, width: 3 }), exit('C'), 10, PAT.ramp2, 10]);
+  extend('demon', 2, [10, enter('V'), GD.slopeWave({ len: 50, seed: 121, width: 2 }), exit('C'), 10, PAT.ramp4, 10]);
 })(typeof window !== 'undefined' ? window : globalThis);

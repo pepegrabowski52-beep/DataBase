@@ -239,7 +239,7 @@ function main() {
   const segArg = args.indexOf('--seg');
   if (segArg >= 0) {
     // quick pattern test: --seg "<ascii lines separated by />" [--speed N] [--mode m]
-    const seg = args[segArg + 1].split('/').join('\n');
+    const seg = args[segArg + 1].trim().split(/\s+/).join('\n');
     const sp = args.includes('--speed') ? +args[args.indexOf('--speed') + 1] : 1;
     const mode = args.includes('--mode') ? args[args.indexOf('--mode') + 1] : 'cube';
     const def = { id: 'seg', name: 'segment', map: [10, seg, 6], settings: { spd: sp, mode } };

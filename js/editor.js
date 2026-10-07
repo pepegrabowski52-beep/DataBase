@@ -289,7 +289,12 @@
       if (this.objs.some((o) => o.t === this.tool && o.x === x && o.y === y && (o.r || 0) === this.buildRot)) return false;
       const d = OBJ[this.tool];
       const o = { t: this.tool, x, y };
-      if (this.buildRot) o.r = this.buildRot;
+      if (d.slope) {
+        const i = (this.buildRot / 90) | 0;
+        if (i === 1 || i === 2) o.fx = true;
+        if (i === 2 || i === 3) o.fy = true;
+        if (d.slope.w > 30) o.x += 15;
+      } else if (this.buildRot) o.r = this.buildRot;
       if (d.props) Object.assign(o, JSON.parse(JSON.stringify(d.props)));
       this.objs.push(o);
       this.sel = new Set([o]);
@@ -302,7 +307,7 @@
       for (let i = this.objs.length - 1; i >= 0; i--) {
         const o = this.objs[i];
         const d = OBJ[o.t];
-        const hb = d.kind === 'portal' ? { w: 30, h: 90 } : d.art === 'saw' ? { w: d.sr * 2, h: d.sr * 2 } : { w: 30, h: 30 };
+        const hb = d.kind === 'portal' ? { w: 30, h: 90 } : d.art === 'saw' ? { w: d.sr * 2, h: d.sr * 2 } : d.slope ? { w: d.slope.w, h: 30 } : { w: 30, h: 30 };
         const rot = (o.r || 0) % 180 !== 0;
         const w = (rot ? hb.h : hb.w) / 2, h = (rot ? hb.w : hb.h) / 2;
         if (Math.abs(wx - o.x) <= w && Math.abs(wy - o.y) <= h) return o;
@@ -354,7 +359,19 @@
           o.y = Math.max(15, o.y);
         }
       }
-      for (const o of this.sel) o.r = (((o.r || 0) + a) % 360 + 360) % 360;
+      for (const o of this.sel) {
+        if (OBJ[o.t].slope) {
+          // slopes cycle through their four orientations instead of rotating
+          const states = [[false, false], [true, false], [true, true], [false, true]];
+          let i = states.findIndex(([fx, fy]) => !!o.fx === fx && !!o.fy === fy);
+          i = (i + (a > 0 ? 1 : 3)) % 4;
+          o.fx = states[i][0];
+          o.fy = states[i][1];
+          delete o.r;
+          continue;
+        }
+        o.r = (((o.r || 0) + a) % 360 + 360) % 360;
+      }
     }
 
     flipSel(k) {
@@ -826,6 +843,13 @@
       const h = this.hover;
       if (this.mode === 'build' && h && !this.drag && h.wy >= 0) {
         const o = { t: this.tool, x: Math.floor(h.wx / 30) * 30 + 15, y: Math.floor(h.wy / 30) * 30 + 15, r: this.buildRot };
+        if (OBJ[this.tool].slope) {
+          const i = (this.buildRot / 90) | 0;
+          o.r = 0;
+          o.fx = i === 1 || i === 2;
+          o.fy = i === 2 || i === 3;
+          if (OBJ[this.tool].slope.w > 30) o.x += 15;
+        }
         r.drawObject(o, OBJ[this.tool], cols, this.time, 0, 0.45, false);
       }
       if (this.mode === 'delete' && h) {

@@ -35,7 +35,7 @@ ohne Build-Schritt, ohne Abhängigkeiten. Einfach `index.html` öffnen und spiel
 * Geschwindigkeitsportale 0.5x / 1x / 2x / 3x / 4x, Schwerkraft-Portale, Mini-/Normal-Portale
 * **Dual-Modus** (zwei gespiegelte Spieler mit einer Taste) und **Spiegel-Portale** (Bildschirm dreht sich um)
 * Orbs (gelb, pink, rot, blau, grün, schwarz) und Pads (gelb, pink, rot, blau) inkl. Klick-Puffer wie im Original
-* Spikes, kleine Spikes, Bodenspikes, Sägeblätter, Blöcke, Halbblöcke
+* Spikes, kleine Spikes, Bodenspikes, Sägeblätter, Blöcke, Halbblöcke, **Schrägen** (45° und 22,5°) zum Hochlaufen, Abspringen und Gleiten (Wave)
 * 3 geheime Münzen pro Level, Sterne für abgeschlossene Level
 * Trigger: Farbe, Bewegen (Gruppen), Transparenz, Ein/Aus, Puls, Kamerawackeln
 * Übungsmodus mit manuellen und automatischen Checkpoints und eigener Musik
@@ -102,7 +102,7 @@ tools/solve.js      Solver zur Level-Prüfung (Node.js)
 node tools/solve.js                 # alle Level
 node tools/solve.js polar -v        # ein Level, alle Klick-Zeitfenster anzeigen
 node tools/solve.js --file mein.gdlevel.json
-node tools/solve.js --seg "..o..../......./^^^^^^.."   # ein einzelnes Muster testen
+node tools/solve.js --seg "..o.... ....... ^^^^^^.."   # ein einzelnes Muster testen (Zeilen durch Leerzeichen getrennt)
 ```
 
 Der Solver simuliert das Spiel mit exakt derselben Engine wie der Browser und durchsucht alle
@@ -121,7 +121,7 @@ Level werden als ASCII-Abschnitte geschrieben (unterste Zeile = Boden), z. B.:
 `
 ```
 
-`#` Block, `^` Spike, `o` gelber Orb, `O` gelbes Pad, `S` Ship-Portal, `Y` Dual-Portal, `Z` Spiegel-Portal,
+`#` Block, `/` `&` Schrägen, `^` Spike, `o` gelber Orb, `O` gelbes Pad, `S` Ship-Portal, `Y` Dual-Portal, `Z` Spiegel-Portal,
 `$` Münze … – die vollständige Zeichenliste steht oben in `js/levelfmt.js`. Generatoren wie `GD.gates`
-(Ship/UFO/Swing-Tore), `GD.waveRun` (Wave-Kanäle) und `GD.sym` (spiegelt eine Hälfte für Dual-Passagen)
+(Ship/UFO/Swing-Tore), `GD.waveRun` / `GD.slopeWave` (Wave-Kanäle aus Blöcken bzw. Schrägen) und `GD.sym` (spiegelt eine Hälfte für Dual-Passagen)
 erzeugen längere Abschnitte.

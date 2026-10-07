@@ -8,6 +8,7 @@
  *
  * Characters (one per 30x30 cell):
  *   # main block   H alt block   X solid block   = slab (top half)   _ slab (bottom half)
+ *   / slope up   & slope down   [ ] ceiling slopes (solid top-left / top-right)
  *   ^ spike  v ceiling spike  < > side spikes  , small spike  ` small ceiling spike  ; ground spikes  : ceiling ground spikes
  *   o p r b g k        yellow / pink / red / blue / green / black orb
  *   O P R B            yellow / pink / red / blue pad      Q E F  yellow / blue / pink pad on a ceiling
@@ -25,6 +26,7 @@
 
   const CH = {
     '#': { t: '@main' }, H: { t: '@alt' }, X: { t: 'block3' },
+    '/': { t: 'slope' }, '&': { t: 'slope', fx: true }, '[': { t: 'slope', fx: true, fy: true }, ']': { t: 'slope', fy: true },
     '=': { t: '@slab' }, _: { t: '@slab', r: 180 },
     '^': { t: 'spike' }, v: { t: 'spike', r: 180 }, '<': { t: 'spike', r: 270 }, '>': { t: 'spike', r: 90 },
     ',': { t: 'spikeS' }, '`': { t: 'spikeS', r: 180 }, ';': { t: 'spikeT' }, ':': { t: 'spikeT', r: 180 },
@@ -88,6 +90,8 @@
           if (t[0] === '@') t = style[t.slice(1)];
           const o = { t, x: (cx + j) * 30 + 15, y: (rows - 1 - i) * 30 + 15 };
           if (m.r) o.r = m.r;
+          if (m.fx) o.fx = true;
+          if (m.fy) o.fy = true;
           out.push(o);
         }
       }
@@ -206,6 +210,44 @@
         if (dir > 0 && b - 1 - s >= 0) grid[b - 1 - s][c] = '#';
         if (dir < 0 && b + w + s < rows) grid[b + w + s][c] = '#';
       }
+    }
+    return gridToStr(grid);
+  };
+
+  /** Wave corridor made of 45° slopes: floor and ceiling run parallel, `width` rows apart. */
+  GD.slopeWave = function (o) {
+    const rnd = GD.U.rng(o.seed || 1);
+    const rows = o.rows || 10, w = o.width || 3;
+    const grid = newGrid(rows, o.len);
+    let F = o.start == null ? Math.floor((rows - w) / 2) : o.start;
+    let d = 0, seg = 0;
+    const open = o.open == null ? 3 : o.open, openEnd = o.openEnd == null ? 2 : o.openEnd;
+    const put = (r, c, ch) => { if (r >= 0 && r < rows) grid[r][c] = ch; };
+    for (let c = 0; c < o.len; c++) {
+      if (c < open || c >= o.len - openEnd) continue;
+      if (seg <= 0) {
+        seg = (o.minSeg || 2) + Math.floor(rnd() * ((o.maxSeg || 4) - (o.minSeg || 2) + 1));
+        const opts = [];
+        if (F + w + 1 < rows) opts.push(1);
+        if (F - 1 >= 1) opts.push(-1);
+        if (rnd() < (o.flat || 0)) opts.length = 0;
+        d = opts.length ? (opts.includes(-d) && rnd() < 0.8 ? -d : opts[Math.floor(rnd() * opts.length)]) : 0;
+        if (d === 0) seg = Math.min(seg, 2);
+      }
+      if ((d > 0 && F + w + 1 >= rows) || (d < 0 && F - 1 < 1)) { d = 0; seg = 0; }
+      const C = F + w;
+      if (d > 0) {
+        put(F, c, '/'); put(F - 1, c, '#');
+        put(C, c, '['); put(C + 1, c, '#');
+      } else if (d < 0) {
+        put(F - 1, c, '&'); put(F - 2, c, '#');
+        put(C - 1, c, ']'); put(C, c, '#');
+      } else {
+        put(F - 1, c, '#');
+        put(C, c, '#');
+      }
+      F += d;
+      seg--;
     }
     return gridToStr(grid);
   };

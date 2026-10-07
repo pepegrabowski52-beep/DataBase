@@ -20,6 +20,8 @@
   def('block5', { kind: 'solid', cat: 'block', name: 'Tech Block', hb: full, art: 'tech' });
   def('block6', { kind: 'solid', cat: 'block', name: 'Glass Block', hb: full, art: 'glass' });
   def('block7', { kind: 'solid', cat: 'block', name: 'Checker Block', hb: full, art: 'checker' });
+  def('slope', { kind: 'solid', cat: 'block', name: 'Slope', hb: full, slope: { w: 30, h: 30 }, art: 'slope' });
+  def('slopeL', { kind: 'solid', cat: 'block', name: 'Long Slope', hb: { x: 0, y: 0, w: 60, h: 30 }, slope: { w: 60, h: 30 }, art: 'slopeL', vr: 34 });
   def('slab', { kind: 'solid', cat: 'block', name: 'Slab', hb: { x: 0, y: 7.5, w: 30, h: 15 }, art: 'slab' });
   def('slab2', { kind: 'solid', cat: 'block', name: 'Grid Slab', hb: { x: 0, y: 7.5, w: 30, h: 15 }, art: 'slabgrid' });
 
