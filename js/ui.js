@@ -14,7 +14,7 @@
     'Tip: Press R to restart instantly, Esc to pause.',
     'Tip: Build and share your own levels in the editor!',
     'Tip: The wave goes up while you hold and down when you release.',
-    'Tip: Stars unlock new icons in the icon kit.',
+    'Tip: Stars, secret coins and finished levels unlock new icons in the icon kit.',
   ];
 
   function esc(s) {
@@ -33,9 +33,36 @@
     return c;
   }
 
+  // Icon unlocks, like in GD: some need stars, some secret coins, some a specific level.
+  const CUBE_REQ = [
+    { stars: 4 }, { coins: 3 }, { stars: 10 }, { level: 'base' }, { stars: 16 }, { coins: 9 }, { stars: 24 }, { level: 'twin' },
+    { stars: 32 }, { coins: 15 }, { stars: 42 }, { level: 'glass' }, { stars: 54 }, { coins: 24 }, { stars: 70 }, { level: 'demon' },
+  ];
+  const MODE_LEVEL = { ship: 'neon', ball: 'rolling', ufo: 'hover', wave: 'wave', robot: 'cycle', spider: 'cycle', swing: 'hyper' };
   function lockReq(mode, i) {
-    if (mode === 'cube') return i < 8 ? 0 : (i - 7) * 4;
-    return i < 2 ? 0 : (i - 1) * 8;
+    if (mode === 'cube') return i < 8 ? null : CUBE_REQ[(i - 8) % CUBE_REQ.length];
+    if (i < 2) return null;
+    if (i === 2) return { level: MODE_LEVEL[mode] };
+    return i % 2 ? { coins: (i - 2) * 5 } : { stars: (i - 2) * 12 };
+  }
+  function reqMet(app, req) {
+    if (!req) return true;
+    const t = app.totals();
+    if (req.stars) return t.stars >= req.stars;
+    if (req.coins) return t.coins >= req.coins;
+    const r = app.save.levels[req.level];
+    return !!(r && r.done);
+  }
+  function reqLabel(req) {
+    if (req.stars) return `${req.stars}★`;
+    if (req.coins) return `${req.coins}<span class="lock-coin"></span>`;
+    return 'Lv ' + (GD.LEVELS.findIndex((l) => l.id === req.level) + 1);
+  }
+  function reqText(req) {
+    if (req.stars) return `Collect ${req.stars} stars to unlock this icon`;
+    if (req.coins) return `Collect ${req.coins} secret coins to unlock this icon`;
+    const d = GD.LEVELS.find((l) => l.id === req.level);
+    return `Complete ${d ? d.name : req.level} to unlock this icon`;
   }
 
   const UI = (GD.UI = {
@@ -314,22 +341,21 @@
       }
       const grid = $('kit-grid');
       grid.innerHTML = '';
-      const stars = app.totals().stars;
       const n = GD.Icons.count[this.kitMode];
       for (let i = 0; i < n; i++) {
         const req = lockReq(this.kitMode, i);
-        const locked = stars < req;
+        const locked = !reqMet(app, req);
         const b = document.createElement('button');
         b.className = 'kit-item' + (ic[this.kitMode] === i ? ' on' : '') + (locked ? ' locked' : '');
         b.appendChild(iconCanvas(this.kitMode, i, ic.c1, ic.c2, 96, ic.glow));
         if (locked) {
           const l = document.createElement('div');
           l.className = 'lock';
-          l.innerHTML = `🔒<br>${req}★`;
+          l.innerHTML = `🔒<br>${reqLabel(req)}`;
           b.appendChild(l);
         }
         b.addEventListener('click', () => {
-          if (locked) { this.toast(`Collect ${req} stars to unlock this icon`); GD.Audio.sfx('back'); return; }
+          if (locked) { this.toast(reqText(req)); GD.Audio.sfx('back'); return; }
           this.click();
           ic[this.kitMode] = i;
           app.persist();

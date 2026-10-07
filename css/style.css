@@ -339,6 +339,7 @@ input[type=range]::-moz-range-thumb { width: calc(var(--u) * 4.4); height: calc(
 .kit-item.on { border-color: #fff; background: rgba(255,255,255,0.18); box-shadow: 0 0 calc(var(--u) * 1.5) rgba(255,255,255,0.6); }
 .kit-item.locked canvas { filter: brightness(0.25) grayscale(1); }
 .kit-item .lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: calc(var(--u) * 2.4); text-shadow: var(--outline-thin); color: #ffd23a; text-align: center; line-height: 1; }
+.kit-item .lock .lock-coin { display: inline-block; width: 0.8em; height: 0.8em; margin-left: 0.1em; border-radius: 50%; vertical-align: -0.05em; background: radial-gradient(circle at 35% 35%, #fff3b0, #ffc21a 55%, #b07800); box-shadow: 0 0 0 0.08em #3a2600; }
 .kit-colors { flex: 1; padding: calc(var(--u) * 1.6) calc(var(--u) * 2); overflow: auto; display: flex; flex-direction: column; gap: calc(var(--u) * 1); }
 .kit-label { font-size: calc(var(--u) * 3); text-shadow: var(--outline-thin); }
 .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 5), 1fr)); gap: calc(var(--u) * 0.7); }
