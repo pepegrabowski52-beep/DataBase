@@ -41,7 +41,7 @@ ohne Build-Schritt, ohne Abhängigkeiten. Einfach `index.html` öffnen und spiel
 * Übungsmodus mit manuellen und automatischen Checkpoints und eigener Musik
 * Fortschritt (Normal-/Übungsmodus), Versuche, Sprünge und Statistiken werden im Browser gespeichert
 
-**11 Level** von *Easy* bis *Demon*:
+**15 Level** von *Easy* bis *Demon*:
 
 | # | Level | Schwierigkeit | Schwerpunkt |
 | --- | --- | --- | --- |
@@ -49,16 +49,21 @@ ohne Build-Schritt, ohne Abhängigkeiten. Einfach `index.html` öffnen und spiel
 | 2 | Back Beat | Easy ★2 | Pads |
 | 3 | Polar Pulse | Normal ★3 | Orbs |
 | 4 | Dry Circuit | Normal ★4 | Schwerkraft (Kopfüber-Passagen) |
-| 5 | Base Line | Hard ★5 | 2x-Geschwindigkeit, Mini-Cube |
-| 6 | Rolling Thunder | Hard ★6 | Ball |
-| 7 | Hover Drive | Harder ★7 | UFO |
-| 8 | Time Bender | Harder ★8 | Wave |
-| 9 | Cycle Core | Insane ★9 | Robot, Spider |
-| 10 | Hyper Drive | Insane ★10 | Swing, 3x |
-| 11 | Demon Gate | Demon ★12 | alles zusammen |
+| 5 | Slope Rush | Normal ★4 | Schrägen (45° und 22,5°) für Cube, Ship, Ball und Wave |
+| 6 | Base Line | Hard ★5 | 2x-Geschwindigkeit, Mini-Cube |
+| 7 | Rolling Thunder | Hard ★6 | Ball |
+| 8 | Twin Peaks | Hard ★6 | Dual-Modus (Cube, Ship, UFO, Wave) |
+| 9 | Hover Drive | Harder ★7 | UFO |
+| 10 | Time Bender | Harder ★8 | Wave |
+| 11 | Looking Glass | Harder ★8 | Spiegel-Portale, Robot, Spider, Swing |
+| 12 | Cycle Core | Insane ★9 | Robot, Spider |
+| 13 | Hyper Drive | Insane ★10 | Swing, 3x |
+| 14 | Velocity | Insane ★10 | alle Geschwindigkeiten von 0,5x bis 4x |
+| 15 | Demon Gate | Demon ★12 | alles zusammen |
 
 Jedes Level wurde automatisch mit einem Solver geprüft: es ist schaffbar, alle drei Münzen sind in einem
-Durchlauf einsammelbar und kein Klick erfordert ein Zeitfenster unter 3 Frames (bei 60 FPS).
+Durchlauf einsammelbar, kein Klick erfordert ein Zeitfenster unter 3 Frames (bei 60 FPS) und kein Portal
+lässt sich umgehen (z. B. indem man über einen Abschnitt hinwegfliegt).
 
 **Drumherum**
 * Hauptmenü, Levelauswahl mit Fortschrittsbalken, Pausemenü, „Level Complete“-Bildschirm
@@ -85,7 +90,7 @@ css/style.css       Menüs im Geometry-Dash-Stil
 js/util.js          Hilfsfunktionen (Farben, RNG, Speicher)
 js/objects.js       Objektkatalog mit Hitboxen
 js/levelfmt.js      ASCII-Levelformat und Generatoren
-js/levels.js        die 11 eingebauten Level
+js/levels.js        die 15 eingebauten Level
 js/engine.js        deterministische Physik (240 Hz), Kollisionen, Trigger
 js/game.js          Spielsitzung: Kamera, Tod/Neustart, Übungsmodus, Effekte
 js/render.js        Canvas-Renderer, Partikel, HUD
@@ -107,7 +112,7 @@ node tools/solve.js --seg "..o.... ....... ^^^^^^.."   # ein einzelnes Muster te
 
 Der Solver simuliert das Spiel mit exakt derselben Engine wie der Browser und durchsucht alle
 Eingabefolgen (60 Entscheidungen pro Sekunde). Er meldet, ob das Level schaffbar ist, ob alle Münzen
-erreichbar sind und wie groß das Zeitfenster jedes Klicks ist.
+erreichbar sind, ob die Lösung ein Portal auslässt und wie groß das Zeitfenster jedes Klicks ist.
 
 ### Levelformat
 
@@ -121,7 +126,7 @@ Level werden als ASCII-Abschnitte geschrieben (unterste Zeile = Boden), z. B.:
 `
 ```
 
-`#` Block, `/` `&` Schrägen, `^` Spike, `o` gelber Orb, `O` gelbes Pad, `S` Ship-Portal, `Y` Dual-Portal, `Z` Spiegel-Portal,
+`#` Block, `/` `&` Schrägen, `(-` `-)` flache Schrägen, `^` Spike, `o` gelber Orb, `O` gelbes Pad, `S` Ship-Portal, `Y` Dual-Portal, `Z` Spiegel-Portal,
 `$` Münze … – die vollständige Zeichenliste steht oben in `js/levelfmt.js`. Generatoren wie `GD.gates`
 (Ship/UFO/Swing-Tore), `GD.waveRun` / `GD.slopeWave` (Wave-Kanäle aus Blöcken bzw. Schrägen) und `GD.sym` (spiegelt eine Hälfte für Dual-Passagen)
 erzeugen längere Abschnitte.

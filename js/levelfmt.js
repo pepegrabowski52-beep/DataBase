@@ -9,6 +9,7 @@
  * Characters (one per 30x30 cell):
  *   # main block   H alt block   X solid block   = slab (top half)   _ slab (bottom half)
  *   / slope up   & slope down   [ ] ceiling slopes (solid top-left / top-right)
+ *   (- long (22.5°) slope up   -) long slope down   (two cells: the '-' is part of the slope)
  *   ^ spike  v ceiling spike  < > side spikes  , small spike  ` small ceiling spike  ; ground spikes  : ceiling ground spikes
  *   o p r b g k        yellow / pink / red / blue / green / black orb
  *   O P R B            yellow / pink / red / blue pad      Q E F  yellow / blue / pink pad on a ceiling
@@ -27,6 +28,7 @@
   const CH = {
     '#': { t: '@main' }, H: { t: '@alt' }, X: { t: 'block3' },
     '/': { t: 'slope' }, '&': { t: 'slope', fx: true }, '[': { t: 'slope', fx: true, fy: true }, ']': { t: 'slope', fy: true },
+    '(': { t: 'slopeL', w2: 1 }, ')': { t: 'slopeL', fx: true, w2: -1 }, '-': null,
     '=': { t: '@slab' }, _: { t: '@slab', r: 180 },
     '^': { t: 'spike' }, v: { t: 'spike', r: 180 }, '<': { t: 'spike', r: 270 }, '>': { t: 'spike', r: 90 },
     ',': { t: 'spikeS' }, '`': { t: 'spikeS', r: 180 }, ';': { t: 'spikeT' }, ':': { t: 'spikeT', r: 180 },
@@ -85,10 +87,11 @@
           const c = line[j];
           if (c === '.' || c === ' ') continue;
           const m = CH[c];
+          if (m === null) continue; // filler cell of a two-cell object
           if (!m) throw new Error('Unknown map char "' + c + '"');
           let t = m.t;
           if (t[0] === '@') t = style[t.slice(1)];
-          const o = { t, x: (cx + j) * 30 + 15, y: (rows - 1 - i) * 30 + 15 };
+          const o = { t, x: (cx + j) * 30 + 15 + (m.w2 || 0) * 15, y: (rows - 1 - i) * 30 + 15 };
           if (m.r) o.r = m.r;
           if (m.fx) o.fx = true;
           if (m.fy) o.fy = true;

@@ -22,12 +22,12 @@
     return a.map((x, i) => x + b[i] + c[i]).join('\n');
   };
 
-  // A column of identical portals covering the whole corridor (cannot be avoided).
+  // A column of identical portals covering the whole corridor without gaps (cannot be avoided).
   const stack = (ch, rows) => {
-    rows = rows || 10;
-    const lines = [];
-    for (let r = rows - 1; r >= 0; r--) lines.push(r % 3 === 1 ? ch : '.');
-    return lines.join('\n');
+    const H = (rows || 10) * 30, n = Math.ceil(H / 80), out = [];
+    for (let i = 0; i < n; i++) out.push({ t: GD.ASCII[ch].t, at: 0, y: ((i + 0.5) * H) / n / 30 - 0.5 });
+    out.push(1);
+    return out;
   };
 
   // Alternating floor / ceiling spike groups for the spider (rows = corridor height).
@@ -926,14 +926,14 @@
         exit('A', 4, 10),
         GD.gates({ len: 6, seed: 1, gap: 8, every: 99, rows: 8 }),
         `
-        ..........vvvv..........vvv.........vvvv.......
-        ...............................................
-        ...............................................
-        ..........................$....................
-        ...............................................
-        ...............................................
-        ...............................................
-        ..^^^^...............^^^^............^^^^......
+        ..........vvvv....................vvvv.................
+        .......................................................
+        .......................................................
+        ...........................$...........................
+        .......................................................
+        .......................................................
+        .......................................................
+        ..^^^^...............^^^^...................^^^^.......
         `,
         exit('C', 3, 8),
         col('bg', '#3a0610'), col('g', '#140206'), pulse('#ff4040'),
@@ -955,11 +955,11 @@
         `,
         12,
         enter('J'),
-        GD.gates({ len: 50, seed: 116, gap: 3, every: 6, maxStep: 2, coinAt: 4 }),
-        stack('m'),
+        GD.gates({ len: 56, seed: 116, gap: 3, every: 7, maxStep: 2, coinAt: 4, lead: 8 }),
+        stack('V'), stack('m'),
         GD.waveRun({ len: 40, seed: 117, width: 4, slope: 2, open: 3 }),
         stack('M'),
-        exit('C'),
+        exit('C'), 5,
         `
         .4..
         .4..
@@ -1139,7 +1139,7 @@
   extend('hyper', 2, [
     12, enter('S'), stack('Y'),
     GD.sym(GD.gates({ len: 56, rows: 5, seed: 105, gap: 3, every: 7, maxStep: 1 })),
-    stack('I'), ['.', '.', '.', '.', 'Z', '.', '.', 'Z', '.', '.'].join('\n'),
+    stack('I'), stack('Z'),
     GD.gates({ len: 40, seed: 106, gap: 4, every: 7, maxStep: 2 }),
     exit('C'), ['.', '.', '.', '.', '.', '.', '.', '.', 'z', '.'].join('\n'),
     12, '^^^', 10,
@@ -1148,7 +1148,7 @@
   extend('demon', 2, [
     10, enter('V'), stack('Y'),
     GD.sym(GD.waveRun({ len: 44, rows: 5, width: 3, seed: 118, open: 4, minSeg: 2, maxSeg: 3 })),
-    stack('I'), ['.', 'Z', '.', '.', 'Z', '.', '.', 'Z', '.', '.'].join('\n'),
+    stack('I'), stack('Z'),
     stack('S'),
     GD.gates({ len: 44, seed: 119, gap: 3, every: 6, maxStep: 2 }),
     exit('C'), ['.', '.', '.', '.', '.', '.', '.', '.', 'z', '.'].join('\n'),
@@ -1164,4 +1164,257 @@
   extend('cycle', 2, [10, PAT.ramp4, 10]);
   extend('wave', 2, [10, enter('V'), GD.slopeWave({ len: 60, seed: 89, width: 3 }), exit('C'), 10, PAT.ramp2, 10]);
   extend('demon', 2, [10, enter('V'), GD.slopeWave({ len: 50, seed: 121, width: 2 }), exit('C'), 10, PAT.ramp4, 10]);
+
+  // ===================================================================== more levels
+  const insertAfter = (id, def) => GD.LEVELS.splice(GD.LEVELS.findIndex((l) => l.id === id) + 1, 0, def);
+
+  // Slope Rush (normal): 45° and 22.5° slopes for cube, ship, ball and wave
+  insertAfter('dry', {
+    id: 'slope', name: 'Slope Rush', diff: 'normal', stars: 4, color: '#d48a3a', song: 'slope',
+    settings: { bgStyle: 'circles', gStyle: 'tiles', bg: '#c0661c', g: '#5a2a08' },
+    style: { main: 'block', alt: 'block4' },
+    map: [
+      16, '^', 10,
+      `
+      ........^.........
+      ....(-######-)....`,
+      8, '^^', 10,
+      `
+      ..........(-##-)........
+      ......(-##########-)....
+      ..(-##################-)`,
+      9, '^', 9,
+      PAT.ramp1,
+      8,
+      `
+      ..........$....
+      ...............
+      ...............
+      ......./.......
+      ....../#.......
+      ...../##^^^^...`,
+      9,
+      col('bg', '#c02a4a'), col('g', '#5a0a1e'), pulse(),
+      `
+      .........^^.........
+      ......./####-)......
+      ....../#######-)....
+      ...../##########-)..`,
+      9, '^^', 10,
+      `
+      ..o....o.......
+      ...............
+      ^^^^^^^^^^.....`,
+      10,
+      enter('S'),
+      GD.slopeWave({ len: 56, seed: 211, width: 5 }),
+      col('bg', '#7a2ab0'), col('g', '#2e0a48'), pulse(),
+      GD.gates({ len: 50, seed: 212, gap: 4, every: 7, maxStep: 2, coinAt: 3 }),
+      exit('C'),
+      col('bg', '#c0661c'), col('g', '#5a2a08'), pulse(),
+      12, PAT.ramp2, 10,
+      enter('A'), 6,
+      `
+      ..........]##[...........vvv.............]###[...........vv.......
+      ..................................................................
+      ..................................................................
+      ..................................................................
+      ..................................................................
+      ..................................................................
+      ..................................................................
+      ...^^^.................../##&.......^^^^........../#&.......^^^...`,
+      ball(44, 213),
+      exit('C', 3, 8),
+      col('bg', '#1c8ac0'), col('g', '#08385a'), pulse(),
+      12, '^^', 9,
+      enter('V'),
+      GD.slopeWave({ len: 56, seed: 214, width: 4 }),
+      exit('C'),
+      col('bg', '#c0661c'), col('g', '#5a2a08'), pulse(),
+      12, PAT.ramp3, 10,
+      `
+      ..........$...........
+      ......................
+      ......########-)......
+      ..............##-)....
+      ................##-)..
+      ..O.....^^^^^^....##-)`,
+      10, PAT.ramp4, 10, '^^', 9,
+      `
+      ..........(-##-)........
+      ......(-####^^####-)....
+      ..(-##################-)`,
+      10, '^', 16,
+    ],
+  });
+
+  // Twin Peaks (hard): dual cube, ship, UFO and wave
+  insertAfter('rolling', {
+    id: 'twin', name: 'Twin Peaks', diff: 'hard', stars: 6, color: '#5aa0e8', song: 'twin',
+    settings: { bgStyle: 'tri', gStyle: 'tiles', bg: '#3a78c0', g: '#122e52' },
+    style: { main: 'block2', alt: 'block6' },
+    map: [
+      16, '^^', 9, '^', 8,
+      PAT.pillars, 10, '^^', 10,
+      enter('Y'), 6,
+      GD.sym(`
+        ..................................................
+        ..................................................
+        ..................................................
+        ............##........^..............###..........
+        .....^......##......#####......^^....###.....^....`),
+      GD.sym(`
+        ..................................
+        ..................................
+        ..o....o..........................
+        ..................................
+        ^^^^^^^^^^......##.....^^.....##..`),
+      { t: 'coin', at: -14, y: 4 },
+      stack('I'), 8, '^^', 9,
+      col('bg', '#3ab0a0'), col('g', '#0e4a44'), pulse(),
+      enter('S'), stack('Y'),
+      GD.sym(GD.gates({ len: 56, rows: 5, seed: 221, gap: 3, every: 8, maxStep: 1 })),
+      stack('I'),
+      GD.gates({ len: 42, seed: 222, gap: 4, every: 7, maxStep: 2, coinAt: 2 }),
+      col('bg', '#7a4ac8'), col('g', '#2a1252'), pulse(),
+      stack('U'), stack('Y'),
+      GD.sym(GD.gates({ len: 56, rows: 5, seed: 223, gap: 3, every: 8, maxStep: 1 })),
+      stack('V'),
+      GD.sym(GD.waveRun({ len: 48, rows: 5, width: 3, seed: 224, open: 4, minSeg: 2, maxSeg: 4 })),
+      stack('I'),
+      GD.waveRun({ len: 24, seed: 225, width: 3, open: 3 }),
+      exit('C'),
+      col('bg', '#3a78c0'), col('g', '#122e52'), pulse(),
+      12, PAT.gaps, 10, '^^', 10,
+      enter('Y'), 6,
+      GD.sym(`
+        ................................................
+        ................................................
+        ................................................
+        ...........##.................###...............
+        ..^^.......##......^^.........###......##..^^...`),
+      { t: 'coin', at: -9, y: 7 },
+      stack('I'), 8,
+      `
+      ..p..p..p..p.....
+      ^^^^^^^^^^^^^....`,
+      9, '^', 8, '^^', 16,
+    ],
+  });
+
+  // Looking Glass (harder): mirror portals all over the place
+  const mirror = (ch) => ['.', '.', '.', '.', '.', '.', '.', '.', ch, '.'].join('\n');
+  insertAfter('wave', {
+    id: 'glass', name: 'Looking Glass', diff: 'harder', stars: 8, color: '#b46aff', song: 'glass',
+    settings: { bgStyle: 'grid', gStyle: 'stripes', bg: '#5a2ab0', g: '#200a48', line: '#e8d8ff' },
+    style: { main: 'block6', alt: 'block5' },
+    map: [
+      16, '^^', 9,
+      mirror('Z'), 8,
+      PAT.gaps, 9, '^^', 9,
+      `..O.^^^^....`,
+      9, PAT.pinkorbs, 9,
+      mirror('z'), 6, '^^', 9,
+      col('bg', '#2a5ab0'), col('g', '#0a2048'), pulse(),
+      enter('U'),
+      GD.gates({ len: 30, seed: 231, gap: 4, every: 7, maxStep: 2 }),
+      stack('Z'),
+      GD.gates({ len: 40, seed: 232, gap: 4, every: 7, maxStep: 2, coinAt: 2 }),
+      stack('S'),
+      GD.gates({ len: 36, seed: 233, gap: 4, every: 6, maxStep: 2 }),
+      stack('z'), stack('G'),
+      GD.gates({ len: 36, seed: 234, gap: 4, every: 6, maxStep: 2 }),
+      stack('N'), stack('Z'),
+      GD.gates({ len: 30, seed: 235, gap: 4, every: 6, maxStep: 2 }),
+      exit('T'),
+      col('bg', '#b02a8a'), col('g', '#480a38'), pulse(),
+      10,
+      `
+      ..........#.........
+      ......#...#.........
+      ..#...#...#.........`,
+      { t: 'coin', at: -10, y: 5 },
+      8, '^^^^', 9,
+      `
+      ##.......##........
+      ##^^^^^^^##........`,
+      mirror('z'), 8,
+      enter('D'), 6,
+      spiderAlt(5, 3, 9, 236),
+      stack('Z', 9),
+      spiderAlt(6, 3, 9, 237),
+      exit('C', 1, 9),
+      col('bg', '#5a2ab0'), col('g', '#200a48'), pulse(),
+      10, '^^', 9,
+      enter('J'),
+      GD.gates({ len: 30, seed: 238, gap: 4, every: 7, maxStep: 2 }),
+      stack('z'),
+      GD.gates({ len: 40, seed: 239, gap: 4, every: 7, maxStep: 2, coinAt: 3 }),
+      exit('C'),
+      `
+      .2..
+      .2..`,
+      10, '^^^', 9, mirror('Z'), 8,
+      `
+      ....##....##.....
+      ..^^##^^^^##^^^..`,
+      9, '^^^', 9, mirror('z'), 8,
+      `
+      .1..
+      .1..`,
+      10, '^', 16,
+    ],
+  });
+
+  // Velocity (insane): every speed from 0.5x to 4x
+  const spd = (n) => ['.' + n + '..', '.' + n + '..'].join('\n');
+  insertAfter('hyper', {
+    id: 'velocity', name: 'Velocity', diff: 'insane', stars: 10, color: '#ff5a1a', song: 'velocity',
+    settings: { bgStyle: 'stripes', gStyle: 'stripes', bg: '#3a0a4a', g: '#14041c', line: '#ffb070', spd: 0 },
+    style: { main: 'block5', alt: 'block3' },
+    map: [
+      16, '^', 9, '^^', 9,
+      PAT.pillars, 9,
+      `
+      .........##........
+      ..^^.....##.....^^.`,
+      { t: 'coin', at: -9.5, y: 4 },
+      9, '^^', 10,
+      spd('1'),
+      9, '^^', 9, PAT.gaps, 9,
+      col('bg', '#0a2a5a'), col('g', '#040e24'), pulse('#ffb070'),
+      spd('2'),
+      10, '^^^', 10,
+      `
+      ....##....##.....
+      ..^^##^^^^##^^^..`,
+      10, '^^^', 10,
+      enter('S'),
+      GD.gates({ len: 44, seed: 241, gap: 4, every: 7, maxStep: 2 }),
+      stack('3'),
+      GD.gates({ len: 64, seed: 242, gap: 4, every: 8, maxStep: 2, coinAt: 4 }),
+      col('bg', '#5a0a2a'), col('g', '#24040e'), pulse('#ffb070'),
+      stack('4'),
+      GD.gates({ len: 80, seed: 243, gap: 5, every: 10, maxStep: 2 }),
+      stack('3'), stack('V'),
+      GD.slopeWave({ len: 70, seed: 244, width: 3 }),
+      col('bg', '#0a4a3a'), col('g', '#041c16'), pulse('#ffb070'),
+      stack('2'), stack('U'),
+      GD.gates({ len: 64, seed: 245, gap: 5, every: 8, maxStep: 2, coinAt: 3 }),
+      exit('C'),
+      col('bg', '#3a0a4a'), col('g', '#14041c'), pulse('#ffb070'),
+      spd('3'),
+      12, '^^^', 12, '^^^^', 12,
+      `
+      .....##......##....
+      ..^^^##^^^^^^##^^^.`,
+      12,
+      spd('4'),
+      14, '^^^', 14, '^^^', 14,
+      spd('0'),
+      9, '^', 9, '^^', 9,
+      spd('1'),
+      10, '^', 16,
+    ],
+  });
 })(typeof window !== 'undefined' ? window : globalThis);

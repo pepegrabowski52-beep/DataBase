@@ -220,6 +220,25 @@ function windows(level, inputs) {
   return res;
 }
 
+/** Replay a solution and list portal columns it never touched (a skipped section). */
+function portalAudit(level, inputs) {
+  const w = new GD.World(level, {});
+  const touched = new Set();
+  const orig = w.portal.bind(w);
+  w.portal = (o) => { touched.add(Math.round(o.x)); return orig(o); };
+  for (let f = 0; f < inputs.length && !w.p.done && !w.p.dead; f++) {
+    w.setHold(!!inputs[f]);
+    for (let k = 0; k < SUB; k++) { w.step(); if (w.p.done || w.p.dead) break; }
+  }
+  const cols = new Map();
+  for (const o of w.objs) {
+    if (o.kind !== 'portal') continue;
+    const k = Math.round(o.x);
+    cols.set(k, cols.get(k) || touched.has(k));
+  }
+  return [...cols].filter(([, v]) => !v).map(([k]) => +(k / 30).toFixed(1)).sort((a, b) => a - b);
+}
+
 function showSeg(def, x) {
   const segs = GD.mapSegments(def.map);
   for (const sg of segs) {
@@ -288,6 +307,12 @@ function main() {
       if (t.def) showSeg(t.def, r.bestX / 30);
       continue;
     }
+    const missed = portalAudit(t.level, r.inputs);
+    if (missed.length) {
+      // built-in levels must not let the player skip portals (e.g. by flying over a section)
+      if (t.def && t.id !== 'seg') allOk = false;
+      console.log(`   ${t.def && t.id !== 'seg' ? '✗' : '⚠'} portals never touched at block ${missed.join(', ')}`);
+    }
     const dur = (r.frames / 60).toFixed(1);
     const minWin = args.includes('--min') ? +args[args.indexOf('--min') + 1] : 3;
     const wins = args.includes('--nowin') ? [] : windows(t.level, r.inputs);
@@ -300,4 +325,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { solve, windows, GD };
+module.exports = { solve, windows, portalAudit, GD };

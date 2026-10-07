@@ -1,5 +1,5 @@
 /* Offline support: cache-first for the game files, network-first fallback for everything else. */
-const CACHE = 'gdweb-v1';
+const CACHE = 'gdweb-v2';
 const FILES = [
   './', 'index.html', 'css/style.css', 'icon.svg', 'manifest.webmanifest',
   'js/util.js', 'js/objects.js', 'js/levelfmt.js', 'js/engine.js', 'js/levels.js', 'js/icons.js',

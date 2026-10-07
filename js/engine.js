@@ -858,13 +858,17 @@
       const oy = o.y + o.oy;
       const main = this.main || p;
       if (d.mode) {
+        // switching between flying modes of the same height keeps the corridor where it is
+        // (otherwise touching the top portal of a portal column would shift the whole section)
+        const H = (CORRIDOR[d.mode] || 0) * 30;
+        const keep = H && this.bnd.ceil != null && this.bnd.ceil - this.bnd.floor === H;
         // in dual mode a gamemode portal switches both players
         this.setMode(main, d.mode);
         if (this.p2) {
           this.setMode(this.p2, d.mode);
-          if (CORRIDOR[d.mode]) this.setCorridor(d.mode, oy);
+          if (CORRIDOR[d.mode]) { if (!keep) this.setCorridor(d.mode, oy); }
           else this.dualCorridor(oy);
-        } else if (CORRIDOR[d.mode]) this.setCorridor(d.mode, oy);
+        } else if (CORRIDOR[d.mode]) { if (!keep) this.setCorridor(d.mode, oy); }
         else { this.bnd.floor = 0; this.bnd.ceil = null; }
         this.ev('portal', { obj: o.id, mode: d.mode });
         return;

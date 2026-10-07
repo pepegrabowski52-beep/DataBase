@@ -93,8 +93,11 @@
   GD.ACHIEVEMENTS = [
     { id: 'first', name: 'Getting Started', desc: 'Complete your first level', test: (s) => s.stats.completed >= 1 },
     { id: 'easy', name: 'Easy Does It', desc: 'Complete both Easy levels', test: (s) => lvlDone(s, 'neon') && lvlDone(s, 'back') },
-    { id: 'hard', name: 'Getting Harder', desc: 'Complete a Hard level', test: (s) => lvlDone(s, 'base') || lvlDone(s, 'rolling') },
-    { id: 'insane', name: 'Insane!', desc: 'Complete an Insane level', test: (s) => lvlDone(s, 'cycle') || lvlDone(s, 'hyper') },
+    { id: 'hard', name: 'Getting Harder', desc: 'Complete a Hard level', test: (s) => ['base', 'rolling', 'twin'].some((id) => lvlDone(s, id)) },
+    { id: 'insane', name: 'Insane!', desc: 'Complete an Insane level', test: (s) => ['cycle', 'hyper', 'velocity'].some((id) => lvlDone(s, id)) },
+    { id: 'twin', name: 'Double Trouble', desc: 'Complete Twin Peaks', test: (s) => lvlDone(s, 'twin') },
+    { id: 'glass', name: 'Through the Looking Glass', desc: 'Complete Looking Glass', test: (s) => lvlDone(s, 'glass') },
+    { id: 'speed', name: 'Speed Demon', desc: 'Complete Velocity', test: (s) => lvlDone(s, 'velocity') },
     { id: 'demon', name: 'Demon Slayer', desc: 'Complete Demon Gate', test: (s) => lvlDone(s, 'demon') },
     { id: 'stars10', name: 'Star Collector', desc: 'Collect 10 stars', test: (s, t) => t.stars >= 10 },
     { id: 'stars30', name: 'Star Hoarder', desc: 'Collect 30 stars', test: (s, t) => t.stars >= 30 },

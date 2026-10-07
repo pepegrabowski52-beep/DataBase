@@ -55,13 +55,17 @@
     wave: { name: 'Time Bender', bpm: 140, root: 49, scale: 'minor', prog: [0, 5, 6, 4], seed: 83, lead: 'saw', bass: 'wobble', drums: 'half', arr: 'std', loopFrom: 2 },
     cycle: { name: 'Cycle Core', bpm: 150, root: 52, scale: 'phrygian', prog: [0, 1, 0, 6], seed: 97, lead: 'square', bass: 'syncop', drums: 'break', arr: 'fast', loopFrom: 2 },
     hyper: { name: 'Hyper Drive', bpm: 170, root: 57, scale: 'minor', prog: [0, 5, 3, 4], seed: 101, lead: 'saw', bass: 'driving', drums: 'break', arr: 'fast', loopFrom: 2 },
+    slope: { name: 'Slope Rush', bpm: 142, root: 53, scale: 'dorian', prog: [0, 6, 3, 4], seed: 131, lead: 'chip', bass: 'syncop', drums: 'four', arr: 'std', loopFrom: 2 },
+    twin: { name: 'Twin Peaks', bpm: 150, root: 56, scale: 'minor', prog: [0, 3, 4, 5], seed: 139, lead: 'square', bass: 'octave', drums: 'break', arr: 'std', loopFrom: 2 },
+    glass: { name: 'Looking Glass', bpm: 138, root: 61, scale: 'harmonic', prog: [0, 5, 3, 4], seed: 149, lead: 'pluck', bass: 'driving', drums: 'half', arr: 'std', loopFrom: 2 },
+    velocity: { name: 'Velocity', bpm: 180, root: 52, scale: 'minor', prog: [0, 6, 5, 4], seed: 157, lead: 'saw', bass: 'driving', drums: 'break', arr: 'fast', loopFrom: 2 },
     demon: { name: 'Demon Gate', bpm: 175, root: 50, scale: 'harmonic', prog: [0, 5, 1, 4], seed: 113, lead: 'square', bass: 'wobble', drums: 'break', arr: 'fast', loopFrom: 2 },
     menu: { name: 'Menu Loop', bpm: 122, root: 53, scale: 'major', prog: [0, 5, 3, 4], seed: 7, lead: 'chip', bass: 'octave', drums: 'four', arr: 'menu', loopFrom: 1 },
     practice: { name: 'Practice', bpm: 96, root: 60, scale: 'major', prog: [0, 3, 5, 4], seed: 5, lead: 'pluck', bass: 'long', drums: 'none', arr: 'chill', loopFrom: 0 },
     editor: { name: 'Editor', bpm: 110, root: 57, scale: 'dorian', prog: [0, 3, 6, 4], seed: 3, lead: 'pluck', bass: 'long', drums: 'none', arr: 'chill', loopFrom: 0 },
   };
   GD.SONGS = SONGS;
-  GD.SONG_LIST = ['neon', 'back', 'polar', 'dry', 'base', 'rolling', 'hover', 'wave', 'cycle', 'hyper', 'demon'];
+  GD.SONG_LIST = ['neon', 'back', 'polar', 'dry', 'slope', 'base', 'rolling', 'twin', 'hover', 'wave', 'glass', 'cycle', 'hyper', 'velocity', 'demon'];
 
   const DRUMS = {
     four: { kick: 'x...x...x...x...', snare: '....x.......x...', hat: '..x...x...x...x.', ohat: '......x.......x.' },
