@@ -45,6 +45,15 @@
     return c;
   }
 
+  // Gauntlets: themed sets of levels; finishing all of them unlocks a special icon
+  GD.GAUNTLETS = [
+    { id: 'speed', name: 'Speed Gauntlet', color: '#ff7a1a', levels: ['slope', 'base', 'hyper', 'velocity'] },
+    { id: 'gravity', name: 'Gravity Gauntlet', color: '#2a9bff', levels: ['dry', 'rolling', 'cycle', 'clockwork'] },
+    { id: 'twin', name: 'Twin Gauntlet', color: '#b46aff', levels: ['wave', 'twin', 'glass', 'hover'] },
+    { id: 'demon', name: 'Demon Gauntlet', color: '#c41f3a', levels: ['demon', 'nightmare', 'overload', 'horizon'] },
+  ];
+  const gauntletDone = (app, gt) => gt.levels.every((id) => !GD.LEVELS.some((l) => l.id === id) || (app.save.levels[id] && app.save.levels[id].done));
+
   // Icon unlocks, like in GD: some need stars, some secret coins, some a specific level.
   const CUBE_REQ = [
     { stars: 4 }, { coins: 3 }, { stars: 10 }, { level: 'base' }, { stars: 16 }, { coins: 9 }, { stars: 24 }, { level: 'twin' },
@@ -58,6 +67,8 @@
   function lockReq(mode, i) {
     if (FX_REQ[mode]) return FX_REQ[mode][i] || null;
     if (mode === 'cube' && i >= 8 + CUBE_REQ.length) {
+      const gt = Object.keys(GD.GAUNTLET_CUBES).find((k) => GD.GAUNTLET_CUBES[k] === i);
+      if (gt) return { gauntlet: gt };
       const code = Object.keys(GD.VAULT_CUBES).find((k) => GD.VAULT_CUBES[k] === i);
       return { vault: code || '?' };
     }
@@ -73,6 +84,7 @@
     if (req.coins) return t.coins >= req.coins;
     if (req.ach) return !!(app.save.achievements && app.save.achievements[req.ach]);
     if (req.vault) return !!(app.save.vault && app.save.vault[req.vault]);
+    if (req.gauntlet) return gauntletDone(app, GD.GAUNTLETS.find((g) => g.id === req.gauntlet));
     const r = app.save.levels[req.level];
     return !!(r && r.done);
   }
@@ -81,12 +93,14 @@
     if (req.coins) return `${req.coins}<span class="lock-coin"></span>`;
     if (req.ach) return '🏆';
     if (req.vault) return '🔑';
+    if (req.gauntlet) return '⚔';
     return 'Lv ' + (GD.LEVELS.findIndex((l) => l.id === req.level) + 1);
   }
   function reqText(req) {
     if (req.stars) return `Collect ${req.stars} stars to unlock this icon`;
     if (req.coins) return `Collect ${req.coins} secret coins to unlock this icon`;
     if (req.vault) return 'Find the secret code for this icon in the Vault';
+    if (req.gauntlet) return `Complete the ${GD.GAUNTLETS.find((g) => g.id === req.gauntlet).name} to unlock this icon`;
     if (req.ach) {
       const a = GD.ACHIEVEMENTS.find((x) => x.id === req.ach);
       return `Get the achievement "${a ? a.name : req.ach}" to unlock this`;
@@ -114,6 +128,7 @@
       $('b-settings').addEventListener('click', () => { this.click(); this.settings(); });
       $('b-stats').addEventListener('click', () => { this.click(); this.stats(); });
       $('b-vault').addEventListener('click', () => { this.click(); this.vault(); });
+      $('lv-gauntlets').addEventListener('click', () => { this.click(); this.show('gauntlets'); });
       $('b-help').addEventListener('click', () => { this.click(); this.help(); });
       $('b-full').addEventListener('click', () => { this.click(); this.fullscreen(); });
       $('lv-prev').addEventListener('click', () => this.turn(-1));
@@ -201,18 +216,20 @@
 
     // -------------------------------------------------------------- navigation
     show(name) {
-      for (const s of ['loading', 'menu', 'levels', 'icons', 'creator', 'editor']) $('s-' + s).classList.toggle('hidden', s !== name);
+      for (const s of ['loading', 'menu', 'levels', 'icons', 'creator', 'editor', 'gauntlets']) $('s-' + s).classList.toggle('hidden', s !== name);
       this.cur = name;
       if (name === 'menu') this.renderMenu();
       if (name === 'levels') this.renderLevels();
       if (name === 'icons') this.renderKit();
       if (name === 'creator') this.renderCreator();
+      if (name === 'gauntlets') this.renderGauntlets();
       if (this.app.scene !== 'game' && this.app.scene !== 'editor') this.app.scene = name;
     },
 
     back() {
       if (this.dialogOpen()) { this.closeDialog(); return; }
-      if (this.cur === 'levels' || this.cur === 'icons' || this.cur === 'creator') { this.click('back'); this.show('menu'); }
+      if (this.cur === 'gauntlets') { this.click('back'); this.show('levels'); }
+      else if (this.cur === 'levels' || this.cur === 'icons' || this.cur === 'creator') { this.click('back'); this.show('menu'); }
     },
 
     onResize() {},
@@ -284,6 +301,49 @@
       }
       $('lv-dots').innerHTML = Array.from({ length: n }, (_, i) => `<span class="${i === this.page ? 'on' : ''}" data-i="${i}"></span>`).join('');
       $('lv-dots').querySelectorAll('span').forEach((s) => s.addEventListener('click', () => { this.page = +s.dataset.i; this.renderLevels(1); }));
+    },
+
+    renderGauntlets() {
+      const app = this.app, ic = app.save.icons;
+      const list = $('gt-list');
+      list.innerHTML = '';
+      for (const gt of GD.GAUNTLETS) {
+        const done = gauntletDone(app, gt);
+        const el = document.createElement('div');
+        el.className = 'gt-panel' + (done ? ' done' : '');
+        el.style.background = `linear-gradient(180deg, ${gt.color}, ${U.rgbToHex(U.shade(U.hexToRgb(gt.color), -0.45))})`;
+        el.innerHTML = `<div class="gt-name">${esc(gt.name)}</div><div class="gt-levels"></div><div class="gt-reward"><span>${done ? 'Unlocked!' : 'Reward'}</span></div>`;
+        const lv = el.querySelector('.gt-levels');
+        for (const id of gt.levels) {
+          const def = GD.LEVELS.find((l) => l.id === id);
+          if (!def) continue;
+          const rec = app.save.levels[id] || {};
+          const b = document.createElement('button');
+          b.className = 'gt-level' + (rec.done ? ' done' : '');
+          b.title = def.name;
+          const c = document.createElement('canvas');
+          c.width = c.height = 96;
+          GD.Icons.face(c.getContext('2d'), def.diff, 96);
+          b.appendChild(c);
+          const n = document.createElement('div');
+          n.className = 'gt-lname';
+          n.textContent = def.name;
+          b.appendChild(n);
+          if (rec.done) b.insertAdjacentHTML('beforeend', '<div class="gt-check">✔</div>');
+          else if (rec.best) b.insertAdjacentHTML('beforeend', `<div class="gt-pct">${rec.best}%</div>`);
+          b.addEventListener('click', () => {
+            this.click();
+            $('s-gauntlets').classList.add('hidden');
+            app.startLevel(app.builtinInfo(def), { returnTo: 'gauntlets' });
+          });
+          lv.appendChild(b);
+        }
+        const rw = el.querySelector('.gt-reward');
+        const cv = iconCanvas('cube', GD.GAUNTLET_CUBES[gt.id], ic.c1, ic.c2, 96, false);
+        if (!done) cv.classList.add('locked');
+        rw.appendChild(cv);
+        list.appendChild(el);
+      }
     },
 
     barHTML(label, pct, practice) {

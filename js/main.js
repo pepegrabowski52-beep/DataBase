@@ -102,6 +102,8 @@
     { id: 'harddemon', name: 'Sweet Dreams', desc: 'Complete the Hard Demon Nightmare', test: (s) => lvlDone(s, 'nightmare') },
     { id: 'insanedemon', name: 'Overclocked', desc: 'Complete the Insane Demon Overload', test: (s) => lvlDone(s, 'overload') },
     { id: 'extremedemon', name: 'Beyond the Horizon', desc: 'Complete the Extreme Demon Event Horizon', test: (s) => lvlDone(s, 'horizon') },
+    { id: 'gauntlet', name: 'Gauntlet Runner', desc: 'Complete a Gauntlet', test: (s) => (GD.GAUNTLETS || []).some((g) => g.levels.every((id) => lvlDone(s, id))) },
+    { id: 'gauntlets', name: 'Gauntlet Master', desc: 'Complete every Gauntlet', test: (s) => (GD.GAUNTLETS || []).every((g) => g.levels.every((id) => lvlDone(s, id))) },
     { id: 'vault', name: 'Vault Hunter', desc: 'Find every secret code in the Vault', test: (s) => !!s.vault && ['lenny', 'spooky', 'royal', 'glitch'].every((k) => s.vault[k]) },
     { id: 'demon', name: 'Demon Slayer', desc: 'Complete Demon Gate', test: (s) => lvlDone(s, 'demon') },
     { id: 'stars10', name: 'Star Collector', desc: 'Collect 10 stars', test: (s, t) => t.stars >= 10 },

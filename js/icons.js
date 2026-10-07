@@ -114,6 +114,40 @@
     },
   ];
   GD.VAULT_CUBES = { lenny: CUBES.length - 4, spooky: CUBES.length - 3, royal: CUBES.length - 2, glitch: CUBES.length - 1 };
+  // ---- gauntlet reward icons
+  CUBES.push(
+    // speed: flame
+    (g, a, b) => {
+      base(g, a);
+      g.beginPath(); g.moveTo(0, 12); g.bezierCurveTo(-12, 10, -11, -2, -4, -12); g.bezierCurveTo(-4, -5, 0, -4, 1, -8);
+      g.bezierCurveTo(8, -2, 12, 9, 0, 12); g.fillStyle = b; g.fill(); g.lineWidth = 1.5; g.strokeStyle = K; g.stroke();
+      g.beginPath(); g.moveTo(0, 10); g.bezierCurveTo(-5, 9, -5, 3, -1, -1); g.bezierCurveTo(1, 3, 6, 5, 0, 10); g.fillStyle = a; g.fill(); g.lineWidth = 1; g.stroke();
+    },
+    // gravity: planet with a ring
+    (g, a, b) => {
+      base(g, a);
+      C(g, 0, 0, 7.5, b, 1.5);
+      g.save(); g.rotate(-0.45); E(g, 0, 0, 13, 4, null, 1.6); g.restore();
+      g.save(); g.rotate(-0.45); g.beginPath(); g.ellipse(0, 0, 13, 4, 0, Math.PI, Math.PI * 2); g.lineWidth = 3; g.strokeStyle = b; g.stroke(); g.restore();
+    },
+    // twin: two mirrored halves
+    (g, a, b) => {
+      base(g, a);
+      P(g, [-15, -15, 0, -15, 0, 15, -15, 15], b, 0);
+      C(g, -7, -2, 3, a, 1.4); C(g, 7, -2, 3, b, 1.4);
+      R(g, -11, 6, 8, 3, a, 1.2); R(g, 3, 6, 8, 3, b, 1.2);
+      R(g, -15, -15, 30, 30, null, 2);
+    },
+    // demon: horned face
+    (g, a, b) => {
+      base(g, a);
+      P(g, [-13, -6, -11, -14, -6, -9], b, 1.3); P(g, [13, -6, 11, -14, 6, -9], b, 1.3);
+      P(g, [-10, -4, -3, -1, -10, 1], b, 1.3); P(g, [10, -4, 3, -1, 10, 1], b, 1.3);
+      P(g, [-9, 5, 9, 5, 7, 11, -7, 11], K, 0);
+      P(g, [-6, 5, -4.5, 8, -3, 5], '#fff', 0); P(g, [3, 5, 4.5, 8, 6, 5], '#fff', 0);
+    },
+  );
+  GD.GAUNTLET_CUBES = { speed: CUBES.length - 4, gravity: CUBES.length - 3, twin: CUBES.length - 2, demon: CUBES.length - 1 };
 
   // ------------------------------------------------------------------ ships (mini cube drawn separately)
   const SHIPS = [
