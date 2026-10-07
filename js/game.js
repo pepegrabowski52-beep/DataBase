@@ -383,7 +383,7 @@
       if (rec && !this.opts.test) {
         rec.jumps = (rec.jumps || 0) + this.sessionJumps;
         this.sessionJumps = 0;
-        if (this.practice) rec.pbest = 100;
+        if (this.practice) { rec.pbest = 100; this.app.save.stats.practiceDone = true; }
         else {
           if ((rec.best || 0) < 100) this.result.newBest = true;
           rec.best = 100;

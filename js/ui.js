@@ -218,7 +218,8 @@
           ${rec.done ? '<div class="done-badge">✔ Completed</div>' : ''}
           <div><canvas class="face" width="160" height="160"></canvas><div class="lv-diff">${DIFF_NAMES[def.diff]}</div></div>
           <div class="lv-name">${esc(def.name)}</div>
-          <div class="lv-meta"><div class="lv-stars">${def.stars} <b>★</b></div><div class="coins">${coins}</div></div>`;
+          <div class="lv-meta"><div class="lv-stars">${def.stars} <b>★</b></div><div class="coins">${coins}</div></div>
+          ${rec.att ? `<div class="lv-att">Attempts: ${rec.att}</div>` : ''}`;
         const fc = card.querySelector('canvas');
         GD.Icons.face(fc.getContext('2d'), def.diff, 160);
         bars.innerHTML = this.barHTML('Normal Mode', rec.best || 0, false) + this.barHTML('Practice Mode', rec.pbest || 0, true);
@@ -567,7 +568,17 @@
       this.dialog('Stats', `<div class="stats-grid">
         ${row('Total Jumps', st.jumps)}${row('Total Attempts', st.attempts)}${row('Deaths', st.deaths)}
         ${row('Completed Levels', st.completed)}${row('Stars', t.stars + ' / ' + t.maxStars)}${row('Secret Coins', t.coins + ' / ' + t.maxCoins)}
-        ${row('Created Levels', this.app.userLevels.length)}</div>`, [{ label: 'OK' }]);
+        ${row('Created Levels', this.app.userLevels.length)}</div>`, [
+        { label: 'Achievements', cls: 'blue', fn: () => { setTimeout(() => this.achievements(), 10); } },
+        { label: 'OK' },
+      ]);
+    },
+
+    achievements() {
+      const got = this.app.save.achievements || {};
+      const n = GD.ACHIEVEMENTS.filter((a) => got[a.id]).length;
+      const rows = GD.ACHIEVEMENTS.map((a) => `<div class="ach ${got[a.id] ? 'on' : ''}"><span class="ach-ic">${got[a.id] ? '🏆' : '🔒'}</span><div><b>${a.name}</b><br><small>${a.desc}</small></div></div>`).join('');
+      this.dialog(`Achievements ${n}/${GD.ACHIEVEMENTS.length}`, `<div class="ach-list">${rows}</div>`, [{ label: 'OK' }]);
     },
 
     help() {

@@ -196,6 +196,12 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .coin-ic { width: calc(var(--u) * 4); height: calc(var(--u) * 4); border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff8b0, #ffcf1f 55%, #c98400); border: 2px solid #6b4300; }
 .coin-ic.off { background: rgba(0,0,0,0.45); border-color: rgba(0,0,0,0.6); }
 .lv-card .done-badge { position: absolute; top: calc(var(--u) * -2.6); right: calc(var(--u) * 3); font-size: calc(var(--u) * 2.8); background: #3eb81e; border: 3px solid #0f2d06; border-radius: 999px; padding: 0 calc(var(--u) * 1.6); text-shadow: var(--outline-thin); }
+.lv-card .lv-att { position: absolute; bottom: calc(var(--u) * 1.6); left: 0; right: 0; text-align: center; font-size: calc(var(--u) * 2.6); text-shadow: var(--outline-thin); opacity: 0.9; }
+.ach-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.ach { display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.25); border-radius: 12px; padding: 8px 12px; opacity: 0.55; }
+.ach.on { opacity: 1; background: rgba(255,210,58,0.22); }
+.ach-ic { font-size: 28px; }
+.ach small { opacity: 0.9; }
 .lv-card.special .lv-name { font-size: calc(var(--u) * 6); }
 .lv-bars { margin-top: calc(var(--u) * 5); display: flex; flex-direction: column; gap: calc(var(--u) * 2); align-items: center; }
 .pbar-label { font-size: calc(var(--u) * 3); text-shadow: var(--outline-thin); text-align: center; margin-bottom: calc(var(--u) * 0.6); }

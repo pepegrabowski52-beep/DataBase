@@ -13,6 +13,7 @@
       icons: { c1: '#7dff00', c2: '#00ffff', glow: false, sel: 'cube', cube: 0, ship: 0, ball: 0, ufo: 0, wave: 0, robot: 0, spider: 0, swing: 0 },
       levels: {},
       stats: { jumps: 0, attempts: 0, deaths: 0, completed: 0 },
+      achievements: {},
     };
   }
 
@@ -87,6 +88,29 @@
     }
   }
 
+  // ------------------------------------------------------------------ achievements
+  const lvlDone = (save, id) => !!(save.levels[id] && save.levels[id].done);
+  GD.ACHIEVEMENTS = [
+    { id: 'first', name: 'Getting Started', desc: 'Complete your first level', test: (s) => s.stats.completed >= 1 },
+    { id: 'easy', name: 'Easy Does It', desc: 'Complete both Easy levels', test: (s) => lvlDone(s, 'neon') && lvlDone(s, 'back') },
+    { id: 'hard', name: 'Getting Harder', desc: 'Complete a Hard level', test: (s) => lvlDone(s, 'base') || lvlDone(s, 'rolling') },
+    { id: 'insane', name: 'Insane!', desc: 'Complete an Insane level', test: (s) => lvlDone(s, 'cycle') || lvlDone(s, 'hyper') },
+    { id: 'demon', name: 'Demon Slayer', desc: 'Complete Demon Gate', test: (s) => lvlDone(s, 'demon') },
+    { id: 'stars10', name: 'Star Collector', desc: 'Collect 10 stars', test: (s, t) => t.stars >= 10 },
+    { id: 'stars30', name: 'Star Hoarder', desc: 'Collect 30 stars', test: (s, t) => t.stars >= 30 },
+    { id: 'starsAll', name: 'Superstar', desc: 'Collect every star', test: (s, t) => t.stars >= t.maxStars },
+    { id: 'coins5', name: 'Coin Hunter', desc: 'Collect 5 secret coins', test: (s, t) => t.coins >= 5 },
+    { id: 'coins15', name: 'Treasure Seeker', desc: 'Collect 15 secret coins', test: (s, t) => t.coins >= 15 },
+    { id: 'coinsAll', name: 'Coin Master', desc: 'Collect every secret coin', test: (s, t) => t.coins >= t.maxCoins },
+    { id: 'jumps500', name: 'Jumper', desc: 'Jump 500 times', test: (s) => s.stats.jumps >= 500 },
+    { id: 'jumps5000', name: 'Kangaroo', desc: 'Jump 5000 times', test: (s) => s.stats.jumps >= 5000 },
+    { id: 'att100', name: 'Persistent', desc: 'Make 100 attempts', test: (s) => s.stats.attempts >= 100 },
+    { id: 'att1000', name: 'Never Give Up', desc: 'Make 1000 attempts', test: (s) => s.stats.attempts >= 1000 },
+    { id: 'practice', name: 'Practice Makes Perfect', desc: 'Finish a level in practice mode', test: (s) => !!s.stats.practiceDone },
+    { id: 'creator', name: 'Architect', desc: 'Create your own level', test: (s, t, app) => app.userLevels.length >= 1 },
+    { id: 'verified', name: 'Verified', desc: 'Verify one of your levels', test: (s, t, app) => app.userLevels.some((l) => l.verified) },
+  ];
+
   // ------------------------------------------------------------------ app
   const App = (GD.App = {
     scene: 'loading',
@@ -123,14 +147,36 @@
       this.save = s && s.v === 1 ? s : d;
       for (const k of ['settings', 'icons', 'stats']) this.save[k] = Object.assign({}, d[k], this.save[k] || {});
       this.save.levels = this.save.levels || {};
+      this.save.achievements = this.save.achievements || {};
       this.userLevels = U.store.get(USER_KEY, []) || [];
       GD.Audio.setVolumes(this.save.settings.music, this.save.settings.sfx);
     },
     persist() {
       U.store.set(SAVE_KEY, this.save);
+      if (this.scene !== 'game' || !this.game || this.game.state !== 'play') this.checkAchievements();
+    },
+    checkAchievements() {
+      const s = this.save;
+      s.achievements = s.achievements || {};
+      const t = this.totals();
+      const fresh = [];
+      for (const a of GD.ACHIEVEMENTS) {
+        if (s.achievements[a.id]) continue;
+        let ok = false;
+        try { ok = a.test(s, t, this); } catch (e) { ok = false; }
+        if (ok) { s.achievements[a.id] = Date.now(); fresh.push(a); }
+      }
+      if (fresh.length) {
+        U.store.set(SAVE_KEY, s);
+        fresh.forEach((a, i) => setTimeout(() => {
+          GD.UI.toast('🏆 Achievement: ' + a.name);
+          GD.Audio.sfx('unlock');
+        }, 600 + i * 2400));
+      }
     },
     persistUser() {
       if (!U.store.set(USER_KEY, this.userLevels)) GD.UI.toast('Could not save (storage full or blocked)');
+      this.checkAchievements();
     },
     resetSave() {
       this.save = defaultSave();
