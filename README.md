@@ -36,6 +36,7 @@ ohne Build-Schritt, ohne Abhängigkeiten. Einfach `index.html` öffnen und spiel
 * **Dual-Modus** (zwei gespiegelte Spieler mit einer Taste), **Spiegel-Portale** (Bildschirm dreht sich um)
   und **Teleport-Portale** (blauer Eingang → nächster oranger Ausgang)
 * Orbs (gelb, pink, rot, blau, grün, schwarz) und Pads (gelb, pink, rot, blau) inkl. Klick-Puffer wie im Original
+* **Dash-Orbs** (grün, magenta mit Schwerkraftwechsel): solange man hält, fliegt man geradeaus in Pfeilrichtung
 * Spikes, kleine Spikes, Bodenspikes, Sägeblätter, Blöcke, Halbblöcke, **Schrägen** (45° und 22,5°) zum Hochlaufen, Abspringen und Gleiten (Wave)
 * 3 geheime Münzen pro Level, Sterne für abgeschlossene Level
 * Trigger: Farbe, Bewegen (Gruppen), Transparenz, Ein/Aus, Puls, Kamerawackeln
@@ -68,12 +69,17 @@ lässt sich umgehen (z. B. indem man über einen Abschnitt hinwegfliegt).
 
 **Drumherum**
 * Hauptmenü, Levelauswahl mit Fortschrittsbalken, Pausemenü, „Level Complete“-Bildschirm
-* Icon-Kit: 24 Cubes plus eigene Designs für alle anderen Modi, 6 Trails, 6 Todes-Effekte, 54 Farben, Glow –
-  neue Icons werden mit Sternen, Secret Coins, Erfolgen oder geschafften Leveln freigeschaltet
-* Prozedurale Musik (Web Audio Synthesizer): jedes Level hat einen eigenen Song, dazu Menü- und Übungsmusik
+* Icon-Kit: 32 Cubes plus eigene Designs für alle anderen Modi, 6 Trails, 6 Todes-Effekte, 54 Farben, Glow –
+  neue Icons werden mit Sternen, Secret Coins, Erfolgen, geschafften Leveln, Gauntlets oder Vault-Codes freigeschaltet
+* **Gauntlets** (Levelauswahl → *Gauntlets*): vier thematische Level-Sets (Speed, Gravity, Twin, Demon) mit Belohnungs-Icons
+* **The Vault** (Schloss im Hauptmenü, ab 10 Sternen): geheime Codes schalten versteckte Icons frei – der Wächter gibt Hinweise
+* Erfolge (Achievements) mit Übersicht, Statistiken
+* Prozedurale Musik (Web Audio Synthesizer): jedes Level hat einen eigenen Song mit Intro, Build-ups, Drops und
+  Drum-Fills, dazu Menü- und Übungsmusik
 * Funktioniert mit Maus, Tastatur, Touch und Gamepad (Querformat auf dem Handy empfohlen)
 * Installierbar als App (PWA) und offline spielbar, sobald die Seite einmal über HTTP(S) geladen wurde
-* Optionen: Musik/SFX-Lautstärke, Prozentanzeige, Fortschrittsbalken, Auto-Checkpoints, FPS, Hitboxen, *Low Detail Mode*
+* Optionen: Musik/SFX-Lautstärke, Prozentanzeige, Fortschrittsbalken, Auto-Checkpoints, FPS, Hitboxen, *Fast Respawn*,
+  *Low Detail Mode* (rendert auch in geringerer Auflösung für schwache Handys)
 * Verschiedene Hintergründe und Böden je Level (auch im Editor wählbar)
 
 **Level-Editor** (Menü → *Create*)
