@@ -572,6 +572,8 @@
         <p style="margin-top:14px"><b>Cube</b> jumps · <b>Ship</b> flies while holding · <b>Ball</b> flips gravity · <b>UFO</b> jumps in mid-air ·
         <b>Wave</b> goes diagonally · <b>Robot</b> jumps higher the longer you hold · <b>Spider</b> teleports to the other side ·
         <b>Swing</b> flips gravity in mid-air.</p>
+        <p><b>Dual portals</b> split you into two mirrored players controlled by the same button – both must survive.
+        <b>Mirror portals</b> flip the screen.</p>
         <p>Orbs work when you click while touching them; pads launch you automatically. Collect the 3 secret coins in each level!</p>`, [{ label: 'OK' }]);
     },
   });

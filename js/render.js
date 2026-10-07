@@ -290,6 +290,22 @@
         g.restore();
       }
     },
+    xportal(g, rgb, d) {
+      ART.portal(g, rgb, Object.assign({}, d, { mode: null }));
+      g.fillStyle = '#fff';
+      g.strokeStyle = 'rgba(0,0,0,0.6)';
+      g.lineWidth = 1.2;
+      const circ = (x, y, r) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); g.stroke(); };
+      if (d.glyph === 'dual') { circ(0, -6, 3.2); circ(0, 6, 3.2); }
+      else if (d.glyph === 'single') circ(0, 0, 3.6);
+      else {
+        g.beginPath();
+        g.moveTo(-5, -6); g.lineTo(-1, -9); g.lineTo(-1, -3); g.closePath();
+        g.moveTo(5, 6); g.lineTo(1, 3); g.lineTo(1, 9); g.closePath();
+        g.fill(); g.stroke();
+        g.fillRect(-1, -7, 6, 2); g.fillRect(-5, 5, 6, 2);
+      }
+    },
     gportal(g, rgb, d) {
       const c = hexRgb(d.c);
       const up = d.key === 'pGravU';
@@ -450,7 +466,7 @@
 
   const SPRITE_SIZE = {
     saw: (d) => (d.sr || 28) * 2 + 6, orb: () => 54, orbring: () => 42, portal: () => 104, gportal: () => 84,
-    sportal: () => 100, speed: () => 52, coin: () => 48, glow: () => 88, cloud: () => 56,
+    sportal: () => 100, xportal: () => 104, speed: () => 52, coin: () => 48, glow: () => 88, cloud: () => 56,
   };
 
   // --------------------------------------------------------------------------- renderer
@@ -463,6 +479,7 @@
       this.rings = [];
       this.cam = { x: 0, y: -90 };
       this.zoom = 1;
+      this.m = 1; // horizontal mirror factor (-1 = mirrored), animated by the game
       this.resize();
     }
 
@@ -496,7 +513,17 @@
     /** Lowest camera y for ground-based modes (more ground visible on tall screens). */
     groundCam() { return this.VH > 400 ? -this.VH * 0.3 : -90; }
 
-    sx(x) { return (x - this.cam.x) * this.S; }
+    sx(x) {
+      const X = (x - this.cam.x) * this.S;
+      return this.m === 1 ? X : this.W / 2 + (X - this.W / 2) * this.m;
+    }
+    /** Apply the mirror transform for screen-space drawing (background, ground). */
+    mirrorOn() {
+      if (this.m !== 1) this.ctx.setTransform(this.m, 0, 0, 1, (this.W / 2) * (1 - this.m), 0);
+    }
+    mirrorOff() {
+      if (this.m !== 1) this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
     sy(y) { return this.H - (y - this.cam.y) * this.S; }
 
     sprite(key, size, fn) {
@@ -519,15 +546,18 @@
 
     blit(sp, x, y, rot, sx, sy, alpha) {
       const ctx = this.ctx;
-      const X = (x - this.cam.x) * this.S, Y = this.H - (y - this.cam.y) * this.S;
+      const m = this.m;
+      let X = (x - this.cam.x) * this.S;
+      const Y = this.H - (y - this.cam.y) * this.S;
+      if (m !== 1) X = this.W / 2 + (X - this.W / 2) * m;
       if (alpha != null && alpha < 1) ctx.globalAlpha = alpha;
-      if (!rot && (sx == null || sx === 1) && (sy == null || sy === 1)) {
+      if (!rot && m === 1 && (sx == null || sx === 1) && (sy == null || sy === 1)) {
         ctx.drawImage(sp.c, X - sp.half, Y - sp.half);
       } else {
         const a = ((rot || 0) * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
         sx = sx == null ? 1 : sx;
         sy = sy == null ? 1 : sy;
-        ctx.setTransform(c * sx, s * sx, -s * sy, c * sy, X, Y);
+        ctx.setTransform(m * c * sx, s * sx, -m * s * sy, c * sy, X, Y);
         ctx.drawImage(sp.c, -sp.half, -sp.half);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
       }
@@ -597,6 +627,7 @@
       const ctx = this.ctx;
       ctx.fillStyle = css(cols.bg);
       ctx.fillRect(0, 0, this.W, this.H);
+      this.mirrorOn();
       if (!this.bgTile) this.makeBgTile();
       const t = this.bgTile;
       const scale = this.S / t.res * 1.25;
@@ -608,6 +639,7 @@
           ctx.drawImage(t.c, x, y, tw + 1, tw + 1);
         }
       }
+      this.mirrorOff();
     }
 
     makeGroundTile() {
@@ -647,6 +679,7 @@
       const tw = t.T * this.S;
       const y0 = top ? Math.min(lineY, this.H) : Math.max(lineY, 0);
       ctx.save();
+      this.mirrorOn();
       ctx.beginPath();
       if (top) ctx.rect(0, 0, this.W, y0);
       else ctx.rect(0, y0, this.W, this.H - y0);
@@ -732,6 +765,7 @@
         case 'portal':
         case 'gportal':
         case 'sportal':
+        case 'xportal':
         case 'speed': {
           const sp = this.objSprite(d, null);
           this.blit(sp, x, y, o.r || 0, sx, sy, alpha);
@@ -809,7 +843,7 @@
         ctx.save();
         ctx.globalAlpha = alpha == null ? 1 : alpha;
         ctx.translate(X, Y);
-        ctx.scale(this.S * scale, this.S * scale * (flip ? -1 : 1));
+        ctx.scale(this.S * scale * this.m, this.S * scale * (flip ? -1 : 1));
         if (ic.glow) { ctx.shadowColor = ic.c2; ctx.shadowBlur = 5 * this.S; }
         GD.Icons.draw(ctx, mode, id, ic.c1, ic.c2, { phase: p.x / 9, air: !p.onGround });
         ctx.restore();

@@ -281,6 +281,7 @@
       if (GD.Audio.ctx && GD.Audio.ctx.state === 'suspended') GD.Audio.ctx.resume();
       GD.Audio.stop(0.1);
       this.game = null;
+      this.renderer.m = 1;
       this.scene = 'menu';
       GD.UI.exitGame(this.returnTo, g);
       this.menuMusic();

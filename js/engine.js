@@ -161,6 +161,9 @@
       this.pulses = [];
       this.shakeFx = null;
       this.used = [];
+      this.used2 = [];
+      this.p2 = null;
+      this.mirror = false;
       this.coinsGot = [false, false, false];
       this.events = [];
       for (const o of this.dynList) this.updAbs(o, 0, 0);
@@ -184,6 +187,9 @@
         hidden: Object.assign({}, this.hidden),
         pulses: this.pulses.length ? this.pulses.map((a) => Object.assign({}, a)) : [],
         used: this.used.slice(),
+        used2: this.used2.slice(),
+        p2: this.p2 ? Object.assign({}, this.p2) : null,
+        mirror: this.mirror,
         coins: this.coinsGot.slice(),
       };
     }
@@ -202,6 +208,9 @@
       this.hidden = Object.assign({}, s.hidden);
       this.pulses = s.pulses.map((a) => Object.assign({}, a));
       this.used = s.used.slice();
+      this.used2 = s.used2 ? s.used2.slice() : [];
+      this.p2 = s.p2 ? Object.assign({}, s.p2) : null;
+      this.mirror = !!s.mirror;
       this.coinsGot = s.coins.slice();
       if (this.dynList.length || this.dynAll.length) {
         for (const o of this.dynAll) {
@@ -373,22 +382,47 @@
     step() {
       const p = this.p;
       if (p.dead || p.done) return;
+      this.main = p;
       const dt = DT;
       this.t += dt;
       let pressed = false;
       if (this.pressQ) {
         this.pressQ = false;
         p.buffer = true;
+        if (this.p2) this.p2.buffer = true;
         pressed = true;
       }
       const hold = this.hold || pressed;
-      p.tp = null;
 
       const T = this.triggers;
       while (this.ti < T.length && T[this.ti].x <= p.x) this.fire(T[this.ti++], false);
       this.effects(dt);
       if (this.carry) p.y += this.carry;
 
+      this.stepPlayer(hold, dt);
+      if (this.p2 && !p.dead) {
+        // second player (dual mode): same physics, own state, swapped in temporarily
+        const p2 = this.p2;
+        p2.x = p.x - SPEEDS[p.spd] * dt;
+        const u = this.used;
+        this.p = p2;
+        this.used = this.used2;
+        this.stepPlayer(hold, dt);
+        this.used2 = this.used;
+        this.used = u;
+        this.p = p;
+        if (p2.dead) p.dead = true;
+        if (this.p2 && this.p2 !== p2) this.p2.x = p.x; // dual portal touched by player 2
+      }
+      if (!p.dead && p.x >= this.endX) {
+        p.done = true;
+        this.ev('complete');
+      }
+    }
+
+    stepPlayer(hold, dt) {
+      const p = this.p;
+      p.tp = null;
       let hw = this.hw();
       if (p.buffer) this.orbs(hw);
       this.move(hold, dt, hw);
@@ -407,10 +441,6 @@
       if (!hold) p.buffer = false;
       this.visual(dt, speed);
       if (p.y > 4000 || p.y < -600) this.die('out of bounds');
-      if (!p.dead && p.x >= this.endX) {
-        p.done = true;
-        this.ev('complete');
-      }
     }
 
     move(hold, dt, hw) {
@@ -712,22 +742,76 @@
       }
     }
 
+    /** Is the player currently the second (dual) player? */
+    isP2() {
+      return this.p2 != null && this.p === this.p2;
+    }
+
+    setMode(pl, mode) {
+      if (pl.mode !== mode) {
+        pl.mode = mode;
+        pl.vy *= 0.5;
+        pl.rbOn = false;
+        pl.rot = 0;
+      }
+    }
+
+    dualCorridor(cy) {
+      if (this.bnd.ceil != null) return; // keep the corridor of a flying section
+      const H = (CORRIDOR[this.p.mode] || 10) * 30;
+      let fl = Math.max(0, Math.round((cy - H / 2) / 30) * 30);
+      if (cy - H / 2 < 45) fl = 0;
+      this.bnd.floor = fl;
+      this.bnd.ceil = fl + H;
+    }
+
     portal(o) {
       const p = this.p, d = o.def;
+      const oy = o.y + o.oy;
+      const main = this.main || p;
       if (d.mode) {
-        const old = p.mode;
-        p.mode = d.mode;
-        if (CORRIDOR[d.mode]) this.setCorridor(d.mode, o.y + o.oy);
+        // in dual mode a gamemode portal switches both players
+        this.setMode(main, d.mode);
+        if (this.p2) {
+          this.setMode(this.p2, d.mode);
+          if (CORRIDOR[d.mode]) this.setCorridor(d.mode, oy);
+          else this.dualCorridor(oy);
+        } else if (CORRIDOR[d.mode]) this.setCorridor(d.mode, oy);
         else { this.bnd.floor = 0; this.bnd.ceil = null; }
-        if (old !== d.mode) {
-          p.vy *= 0.5;
-          p.rbOn = false;
-          p.rot = 0;
-        }
         this.ev('portal', { obj: o.id, mode: d.mode });
         return;
       }
       switch (o.t) {
+        case 'pDual':
+          if (!this.p2) {
+            const p2 = Object.assign({}, p);
+            this.dualCorridor(oy);
+            // the second player appears mirrored across the middle of the corridor
+            p2.y = this.bnd.floor + this.bnd.ceil - p.y;
+            p2.gr = -p.gr;
+            p2.vy = -p.vy;
+            p2.onGround = false;
+            p2.buffer = false;
+            p2.rbOn = false;
+            this.p2 = p2;
+            this.used2 = [o.id];
+            this.ev('portal', { obj: o.id });
+          }
+          break;
+        case 'pSingle':
+          if (this.p2) {
+            this.p2 = null;
+            this.used2 = [];
+            if (!CORRIDOR[p.mode]) { this.bnd.floor = 0; this.bnd.ceil = null; }
+            this.ev('portal', { obj: o.id });
+          }
+          break;
+        case 'pMirror':
+          if (!this.mirror) { this.mirror = true; this.ev('portal', { obj: o.id }); }
+          break;
+        case 'pUnmirror':
+          if (this.mirror) { this.mirror = false; this.ev('portal', { obj: o.id }); }
+          break;
         case 'pGravU':
           if (p.gr > 0) { p.gr = -1; p.vy *= 0.5; p.onGround = false; this.ev('gravity', { obj: o.id }); }
           break;
@@ -735,17 +819,29 @@
           if (p.gr < 0) { p.gr = 1; p.vy *= 0.5; p.onGround = false; this.ev('gravity', { obj: o.id }); }
           break;
         case 'pMini':
-          if (!p.mini) { p.mini = true; this.ev('portal', { obj: o.id }); }
+          if (!p.mini) {
+            p.mini = true;
+            if (this.p2) { main.mini = true; this.p2.mini = true; }
+            this.ev('portal', { obj: o.id });
+          }
           break;
         case 'pBig':
           if (p.mini) {
-            p.mini = false;
-            if (p.onGround) p.y += p.gr * (this.hw() - (p.mode === 'wave' ? 3.5 : 9));
+            for (const pl of this.p2 ? [main, this.p2] : [p]) {
+              if (!pl.mini) continue;
+              pl.mini = false;
+              if (pl.onGround) pl.y += pl.gr * (pl.mode === 'wave' ? 1.5 : 6);
+            }
             this.ev('portal', { obj: o.id });
           }
           break;
         default:
-          if (d.spd != null && p.spd !== d.spd) { p.spd = d.spd; this.ev('speed', { obj: o.id }); }
+          if (d.spd != null && p.spd !== d.spd) {
+            main.spd = d.spd;
+            if (this.p2) this.p2.spd = d.spd;
+            p.spd = d.spd;
+            this.ev('speed', { obj: o.id });
+          }
       }
     }
 

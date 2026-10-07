@@ -550,6 +550,7 @@
       GD.Audio.stop(0.1);
       this.path = this.testPath;
       this.test = null;
+      this.r.m = 1;
       this.applyZoom();
       this.topEl.classList.remove('hidden');
       this.bottomEl.classList.remove('hidden');

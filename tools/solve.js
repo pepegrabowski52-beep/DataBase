@@ -28,7 +28,7 @@ function keyOf(w, h) {
     p.mode + (p.gr > 0 ? '+' : '-') + (p.mini ? 'm' : '') + p.spd + '|' + Math.round(p.x) + '|' +
     yq + '|' + vq + '|' + (p.onGround ? 1 : 0) + (h ? 1 : 0) +
     (p.buffer ? 1 : 0) + '|' + (p.rbOn ? Math.round(p.rb * 240) : '') + '|' + w.used.join(',') + '|' +
-    w.bnd.floor + ',' + w.bnd.ceil + '|' + (w.coinsGot[0] ? 1 : 0) + (w.coinsGot[1] ? 1 : 0) + (w.coinsGot[2] ? 1 : 0)
+    w.bnd.floor + ',' + w.bnd.ceil + '|' + (w.p2 ? Math.round(w.p2.y) + ',' + Math.round(w.p2.vy / 10) + ',' + w.p2.gr + (w.p2.onGround ? 'g' : '') + w.used2.join(',') : '') + '|' + (w.coinsGot[0] ? 1 : 0) + (w.coinsGot[1] ? 1 : 0) + (w.coinsGot[2] ? 1 : 0)
   );
 }
 

@@ -31,6 +31,8 @@
       this.streak = [];
       this.paused = false;
       this.prev = { x: 0, y: 0 };
+      this.prev2 = { x: 0, y: 0 };
+      this.trail2 = [];
       this.lastCP = 0;
       this.fpsT = 0;
       this.fpsN = 0;
@@ -66,9 +68,12 @@
       this.state = 'play';
       this.deadT = 0;
       this.trail.length = 0;
+      this.trail2.length = 0;
       this.streak.length = 0;
       this.prev.x = w.p.x;
       this.prev.y = w.p.y;
+      if (w.p2) { this.prev2.x = w.p2.x; this.prev2.y = w.p2.y; }
+      this.r.m = w.mirror ? -1 : 1;
       this.snapCamera();
       this.lastCP = w.t;
     }
@@ -153,7 +158,10 @@
           this.acc -= DT;
           this.prev.x = w.p.x;
           this.prev.y = w.p.y;
+          const had2 = !!w.p2;
+          if (w.p2) { this.prev2.x = w.p2.x; this.prev2.y = w.p2.y; }
           w.step();
+          if (w.p2 && !had2) { this.prev2.x = w.p2.x; this.prev2.y = w.p2.y; this.trail2.length = 0; }
           this.handleEvents();
           if (w.p.dead) { this.onDeath(); break; }
           if (w.p.done) { this.onComplete(); break; }
@@ -176,6 +184,12 @@
           this.app.showComplete(this);
         }
       }
+      // mirror portal: squeeze the screen through 0 to -1 like the original
+      const mt = w.mirror ? -1 : 1;
+      if (this.r.m !== mt) {
+        const d = mt - this.r.m;
+        this.r.m += Math.sign(d) * Math.min(Math.abs(d), dt * 4);
+      }
       this.updateCamera(dt);
       this.r.updateParticles(dt);
     }
@@ -193,6 +207,7 @@
       const px = U.lerp(this.prev.x, p.x, alpha);
       this.rx = px;
       this.ry = U.lerp(this.prev.y, p.y, alpha);
+      if (w.p2) this.ry2 = U.lerp(this.prev2.y, w.p2.y, alpha);
       let cx = px - this.camOffset();
       const stopX = w.endX - r.VW * 0.72;
       if (cx > stopX) cx = stopX;
@@ -283,15 +298,29 @@
     }
 
     emitTrails(dt) {
-      const w = this.world, p = w.p, r = this.r, ic = this.iconCols();
-      const hw = w.hw();
-      const s = p.mini ? 0.6 : 1;
+      const w = this.world, ic = this.iconCols();
       this.partT = (this.partT || 0) + dt;
-      if (this.partT > 0.025) {
-        this.partT = 0;
+      const emit = this.partT > 0.025;
+      if (emit) this.partT = 0;
+      this.emitFor(w.p, this.trail, emit, ic.c1);
+      if (w.p2) this.emitFor(w.p2, this.trail2, emit, ic.c2);
+      else if (this.trail2.length) this.trail2.length = 0;
+      const p = w.p;
+      if (this.streakT > 0) {
+        this.streakT -= dt;
+        this.streak.push([p.x, p.y, this.time]);
+      }
+      while (this.streak.length && this.time - this.streak[0][2] > 0.25) this.streak.shift();
+    }
+
+    emitFor(p, trail, emit, color) {
+      const r = this.r;
+      const hw = p.mode === 'wave' ? (p.mini ? 3.5 : 5) : p.mini ? 9 : 15;
+      const s = p.mini ? 0.6 : 1;
+      if (emit) {
         if (p.onGround && (p.mode === 'cube' || p.mode === 'robot' || p.mode === 'ball' || p.mode === 'spider')) {
           const fy = p.y - p.gr * hw;
-          r.spawn(p.x - hw * 0.8, fy + p.gr * 2, -60 - Math.random() * 60, p.gr * (20 + Math.random() * 60), 0.35, 3.2 * s, ic.c1);
+          r.spawn(p.x - hw * 0.8, fy + p.gr * 2, -60 - Math.random() * 60, p.gr * (20 + Math.random() * 60), 0.35, 3.2 * s, color);
         }
         if (p.mode === 'ship' || p.mode === 'ufo' || p.mode === 'swing') {
           const a = (p.rot * Math.PI) / 180;
@@ -304,17 +333,12 @@
         }
       }
       if (p.mode === 'wave') {
-        this.trail.push([p.x, p.y]);
-        while (this.trail.length > 2 && this.trail[0][0] < this.cam.x - 60) this.trail.shift();
-        if (this.trail.length > 600) this.trail.shift();
-      } else if (this.trail.length) {
-        this.trail.length = 0;
+        trail.push([p.x, p.y]);
+        while (trail.length > 2 && trail[0][0] < this.cam.x - 60) trail.shift();
+        if (trail.length > 600) trail.shift();
+      } else if (trail.length) {
+        trail.length = 0;
       }
-      if (this.streakT > 0) {
-        this.streakT -= dt;
-        this.streak.push([p.x, p.y, this.time]);
-      }
-      while (this.streak.length && this.time - this.streak[0][2] > 0.25) this.streak.shift();
     }
 
     onDeath() {
@@ -425,7 +449,16 @@
         r.drawTrail(pts, ic.c1, p.mini ? 5 : 8, 0.95);
       }
       if (this.streak.length > 1) r.drawTrail(this.streak, 'rgba(255,255,255,0.5)', 6, 0.5);
+      const p2 = w.p2;
+      if (this.trail2.length > 1 && p2) {
+        const pts = this.trail2.concat(this.state === 'play' ? [[this.rx, this.ry2]] : []);
+        r.drawTrail(pts, ic.c2, p2.mini ? 5 : 8, 0.95);
+      }
       if (this.state === 'play') {
+        if (p2) {
+          const ic2 = Object.assign({}, ic, { c1: ic.c2, c2: ic.c1 });
+          r.drawPlayer({ x: this.rx, y: this.ry2, mode: p2.mode, mini: p2.mini, gr: p2.gr, rot: p2.rot, onGround: p2.onGround }, ic2, t, 1);
+        }
         r.drawPlayer({ x: this.rx, y: this.ry, mode: p.mode, mini: p.mini, gr: p.gr, rot: p.rot, onGround: p.onGround }, ic, t, 1);
         if (this.practice && this.settings.hitboxes) this.drawHitbox();
       }
@@ -448,9 +481,10 @@
 
     drawEnd(cols) {
       const r = this.r, w = this.world;
-      const x = r.sx(w.endX);
+      const x = (w.endX - r.cam.x) * r.S;
       if (x > r.W + 40 || x < -200) return;
       const ctx = r.ctx;
+      r.mirrorOn();
       const gr = ctx.createLinearGradient(x - 120 * r.S, 0, x, 0);
       gr.addColorStop(0, 'rgba(255,255,255,0)');
       gr.addColorStop(1, 'rgba(255,255,255,0.35)');
@@ -460,6 +494,7 @@
       ctx.fillRect(x - 1.5 * r.S, 0, 3 * r.S, r.H);
       ctx.fillStyle = U.rgba(cols.bg, 0.6);
       ctx.fillRect(x + 1.5 * r.S, 0, r.W, r.H);
+      r.mirrorOff();
     }
 
     drawHitbox() {

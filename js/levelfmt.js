@@ -14,6 +14,7 @@
  *   C S A U V T D J    cube / ship / ball / ufo / wave / robot / spider / swing portal
  *   G N                gravity flip (upside down) / normal gravity portal
  *   m M                mini / normal size portal
+ *   Y I                dual / single portal       Z z   mirror / unmirror portal
  *   0 1 2 3 4          speed portal 0.5x 1x 2x 3x 4x
  *   $ coin   * saw   @ big saw   % small saw
  *   + ring deco   | chain deco   " grass deco   ! arrow deco   ' light dots   ~ fake spike
@@ -33,6 +34,7 @@
     C: { t: 'pCube' }, S: { t: 'pShip' }, A: { t: 'pBall' }, U: { t: 'pUfo' }, V: { t: 'pWave' },
     T: { t: 'pRobot' }, D: { t: 'pSpider' }, J: { t: 'pSwing' },
     G: { t: 'pGravU' }, N: { t: 'pGravD' }, m: { t: 'pMini' }, M: { t: 'pBig' },
+    Y: { t: 'pDual' }, I: { t: 'pSingle' }, Z: { t: 'pMirror' }, z: { t: 'pUnmirror' },
     0: { t: 'sp0' }, 1: { t: 'sp1' }, 2: { t: 'sp2' }, 3: { t: 'sp3' }, 4: { t: 'sp4' },
     $: { t: 'coin' }, '*': { t: 'sawM' }, '@': { t: 'sawB' }, '%': { t: 'sawS' },
     '+': { t: 'dRing' }, '|': { t: 'dChain' }, '"': { t: 'dGrass' }, '!': { t: 'dArrow' },
@@ -107,6 +109,16 @@
       cx += width;
     }
     return segs;
+  };
+
+  /** Mirror a lower-half section to the top half (for dual mode): rows are flipped, spikes inverted. */
+  const FLIP = { '^': 'v', v: '^', ',': '`', '`': ',', ';': ':', ':': ';', O: 'Q', Q: 'O', B: 'E', E: 'B', P: 'F', F: 'P', '=': '_', _: '=' };
+  GD.sym = function (lower) {
+    const lines = dedent(lower);
+    const w = Math.max(...lines.map((l) => l.length));
+    const pad = lines.map((l) => l + '.'.repeat(w - l.length));
+    const upper = pad.slice().reverse().map((l) => l.split('').map((c) => FLIP[c] || c).join(''));
+    return upper.concat(pad).join('\n');
   };
 
   GD.rep = function (n, ...segs) {

@@ -973,4 +973,169 @@
       ],
     },
   ];
+
+  // ===================================================================== extensions
+  // Patterns verified with tools/solve.js (cube, 1x unless noted).
+  const PAT = {
+    orbpit: `
+      ..o....o.....
+      .............
+      ^^^^^^^^^^...`,
+    pinkorbs: `
+      ..p..p..p..p.....
+      ^^^^^^^^^^^^^....`,
+    pillars: `
+      ....##...##...##....
+      ..^^##^^^##^^^##^^..`,
+    platform: `
+      ...^....^....^...
+      #################`,
+    stairs: `
+      ........####
+      ....####....
+      ####........`,
+    padhigh: `
+      ......######..
+      ..............
+      ..............
+      ..O...........`,
+    padspikes: `..O.^^^....`,
+    gaps: `
+      ##...##...##...
+      ##^^^##^^^##^^^`,
+  };
+  const ball = (len, seed, coinCol) => {
+    // alternating floor / ceiling spike groups for an 8 high ball corridor
+    const rnd = GD.U.rng(seed);
+    const top = [], bot = [];
+    let c = 0, floor = true;
+    while (c < len - 6) {
+      const n = 2 + Math.floor(rnd() * 3);
+      for (let i = 0; i < n; i++) { top.push(floor ? '.' : 'v'); bot.push(floor ? '^' : '.'); }
+      for (let i = 0; i < 7; i++) { top.push('.'); bot.push('.'); }
+      c += n + 7;
+      floor = !floor;
+    }
+    while (top.length < len) { top.push('.'); bot.push('.'); }
+    const lines = [top.join('')];
+    for (let i = 0; i < 6; i++) lines.push('.'.repeat(len));
+    lines.push(bot.join(''));
+    if (coinCol != null) lines[3] = lines[3].slice(0, coinCol) + '$' + lines[3].slice(coinCol + 1);
+    return lines.join('\n');
+  };
+
+  function extend(id, keepTail, entries) {
+    const d = GD.LEVELS.find((l) => l.id === id);
+    d.map.splice(d.map.length - keepTail, 0, ...entries);
+  }
+
+  extend('neon', 2, [
+    12, PAT.pillars, 10, PAT.platform, 9, '^^', 9, PAT.padhigh, `
+      ..^^...
+      .......
+      .......
+      .......`,
+    8, PAT.orbpit, 10, '^', 8, '^^', 10, PAT.stairs, 10, '^', 9,
+  ]);
+
+  extend('back', 2, [
+    10, PAT.padspikes, 9, PAT.gaps, 9, '^^', 8, PAT.pinkorbs, 10, PAT.padhigh, `
+      ...^^..
+      .......
+      .......
+      .......`,
+    10, PAT.padspikes, 8, '^', 9,
+  ]);
+
+  extend('polar', 2, [
+    12, enter('S'),
+    GD.gates({ len: 60, seed: 34, gap: 4, every: 6, maxStep: 2.5 }),
+    exit('C'),
+    12, PAT.pinkorbs, 10, PAT.orbpit, 10, '^^', 9,
+  ]);
+
+  extend('dry', 2, [
+    10, `
+      ###################################
+      ...........v........v.........v..N.
+      ...................................
+      .................................N.
+      .G.................................
+      ...................................`,
+    10, '^^', 9, `
+      ######################.......
+      ............v.....v..........
+      ....................b........
+      ....###......................
+      ....###......................
+      .B..###......................`,
+    10, PAT.pillars, 9,
+  ]);
+
+  extend('base', 2, [
+    10, enter('Y'), 6, GD.sym(`
+      ...................................
+      ...................................
+      ...................................
+      ...................................
+      ....^.......^^........^.......^^...`),
+    stack('I'), 8, '^^', 8, `
+      .2..
+      .2..`,
+    10, PAT.gaps, 10, '^^^', 10, `
+      .1..
+      .1..`,
+    10,
+  ]);
+
+  extend('rolling', 2, [
+    10, enter('A'), 6, ball(60, 61), exit('C', 3, 8),
+    12, PAT.pillars, 10, '^^', 9,
+  ]);
+
+  extend('hover', 2, [
+    10, ['.', '.', '.', '.', '.', '.', '.', '.', 'Z', '.'].join('\n'), 10, enter('U'),
+    GD.gates({ len: 50, seed: 77, gap: 4, every: 7, maxStep: 2 }),
+    exit('C'),
+    ['.', '.', '.', '.', '.', '.', '.', '.', 'z', '.'].join('\n'), 12, '^^', 9,
+  ]);
+
+  extend('wave', 2, [
+    12, enter('V'), stack('Y'),
+    GD.sym(GD.waveRun({ len: 50, rows: 5, width: 3, seed: 87, open: 4, minSeg: 2, maxSeg: 4 })),
+    stack('I'),
+    GD.waveRun({ len: 30, seed: 88, width: 3, open: 3 }),
+    exit('C'),
+    12, '^^', 9,
+  ]);
+
+  extend('cycle', 2, [
+    10, ['.', '.', '.', '.', '.', '.', '.', '.', 'Z', '.'].join('\n'), 8, enter('T'), 8, `
+      ..........#.........
+      ......#...#.........
+      ..#...#...#.........`,
+    8, '^^^^', 9, `
+      ##.......##........
+      ##^^^^^^^##........`,
+    8, enter('C'), ['.', '.', '.', '.', '.', '.', '.', '.', 'z', '.'].join('\n'), 12, '^^', 9,
+  ]);
+
+  extend('hyper', 2, [
+    12, enter('S'), stack('Y'),
+    GD.sym(GD.gates({ len: 56, rows: 5, seed: 105, gap: 3, every: 7, maxStep: 1 })),
+    stack('I'), ['.', '.', '.', '.', 'Z', '.', '.', 'Z', '.', '.'].join('\n'),
+    GD.gates({ len: 40, seed: 106, gap: 4, every: 7, maxStep: 2 }),
+    exit('C'), ['.', '.', '.', '.', '.', '.', '.', '.', 'z', '.'].join('\n'),
+    12, '^^^', 10,
+  ]);
+
+  extend('demon', 2, [
+    10, enter('V'), stack('Y'),
+    GD.sym(GD.waveRun({ len: 44, rows: 5, width: 3, seed: 118, open: 4, minSeg: 2, maxSeg: 3 })),
+    stack('I'), ['.', 'Z', '.', '.', 'Z', '.', '.', 'Z', '.', '.'].join('\n'),
+    stack('S'),
+    GD.gates({ len: 44, seed: 119, gap: 3, every: 6, maxStep: 2 }),
+    exit('C'), ['.', '.', '.', '.', '.', '.', '.', '.', 'z', '.'].join('\n'),
+    12, '^^', 10,
+  ]);
 })(typeof window !== 'undefined' ? window : globalThis);

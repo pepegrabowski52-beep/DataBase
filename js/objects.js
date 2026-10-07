@@ -64,6 +64,11 @@
   def('pMini', { kind: 'portal', cat: 'portal', name: 'Mini Portal', hb: { x: 0, y: 0, w: 31, h: 90 }, art: 'sportal', c: '#ff5cf0', col: 'none', vr: 50 });
   def('pBig', { kind: 'portal', cat: 'portal', name: 'Normal Size', hb: { x: 0, y: 0, w: 31, h: 90 }, art: 'sportal', c: '#5cff6a', col: 'none', vr: 50 });
 
+  def('pDual', { kind: 'portal', cat: 'portal', name: 'Dual Portal', hb: { x: 0, y: 0, w: 34, h: 86 }, art: 'xportal', glyph: 'dual', c: '#ff8a24', col: 'none', vr: 50 });
+  def('pSingle', { kind: 'portal', cat: 'portal', name: 'Single Portal', hb: { x: 0, y: 0, w: 34, h: 86 }, art: 'xportal', glyph: 'single', c: '#3ab6ff', col: 'none', vr: 50 });
+  def('pMirror', { kind: 'portal', cat: 'portal', name: 'Mirror Portal', hb: { x: 0, y: 0, w: 34, h: 86 }, art: 'xportal', glyph: 'mirror', c: '#ffb43a', col: 'none', vr: 50 });
+  def('pUnmirror', { kind: 'portal', cat: 'portal', name: 'Unmirror Portal', hb: { x: 0, y: 0, w: 34, h: 86 }, art: 'xportal', glyph: 'unmirror', c: '#47c8ff', col: 'none', vr: 50 });
+
   const spHB = { x: 0, y: 0, w: 35, h: 44 };
   def('sp0', { kind: 'portal', cat: 'speed', name: 'Speed 0.5x', hb: spHB, art: 'speed', spd: 0, c: '#ffb43a', col: 'none', vr: 35 });
   def('sp1', { kind: 'portal', cat: 'speed', name: 'Speed 1x', hb: spHB, art: 'speed', spd: 1, c: '#47c8ff', col: 'none', vr: 35 });

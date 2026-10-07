@@ -32,6 +32,7 @@ ohne Build-Schritt, ohne Abhängigkeiten. Einfach `index.html` öffnen und spiel
 **Gameplay (Physik mit den Original-Konstanten von Geometry Dash)**
 * 8 Spielmodi: Cube, Ship, Ball, UFO, Wave, Robot, Spider, Swing – jeweils auch als Mini-Version
 * Geschwindigkeitsportale 0.5x / 1x / 2x / 3x / 4x, Schwerkraft-Portale, Mini-/Normal-Portale
+* **Dual-Modus** (zwei gespiegelte Spieler mit einer Taste) und **Spiegel-Portale** (Bildschirm dreht sich um)
 * Orbs (gelb, pink, rot, blau, grün, schwarz) und Pads (gelb, pink, rot, blau) inkl. Klick-Puffer wie im Original
 * Spikes, kleine Spikes, Bodenspikes, Sägeblätter, Blöcke, Halbblöcke
 * 3 geheime Münzen pro Level, Sterne für abgeschlossene Level
@@ -116,5 +117,7 @@ Level werden als ASCII-Abschnitte geschrieben (unterste Zeile = Boden), z. B.:
 `
 ```
 
-`#` Block, `^` Spike, `o` gelber Orb, `O` gelbes Pad, `S` Ship-Portal, `$` Münze … – die vollständige
-Zeichenliste steht oben in `js/levelfmt.js`.
+`#` Block, `^` Spike, `o` gelber Orb, `O` gelbes Pad, `S` Ship-Portal, `Y` Dual-Portal, `Z` Spiegel-Portal,
+`$` Münze … – die vollständige Zeichenliste steht oben in `js/levelfmt.js`. Generatoren wie `GD.gates`
+(Ship/UFO/Swing-Tore), `GD.waveRun` (Wave-Kanäle) und `GD.sym` (spiegelt eine Hälfte für Dual-Passagen)
+erzeugen längere Abschnitte.
