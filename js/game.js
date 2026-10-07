@@ -191,7 +191,35 @@
         this.r.m += Math.sign(d) * Math.min(Math.abs(d), dt * 4);
       }
       this.updateCamera(dt);
+      this.ambient(dt);
       this.r.updateParticles(dt);
+    }
+
+    /** Ambient particles: portals suck particles in, pads emit sparkles. */
+    ambient(dt) {
+      if (this.r.lowDetail) return;
+      this.ambT = (this.ambT || 0) + dt;
+      if (this.ambT < 0.045) return;
+      this.ambT = 0;
+      const w = this.world, r = this.r;
+      const [a, b] = r.visibleRange(w.rlist, this.cam, 40);
+      let n = 0;
+      for (let i = a; i < b && n < 14; i++) {
+        const o = w.rlist[i];
+        if (o.kind !== 'portal' && o.kind !== 'pad') continue;
+        if (o.g && w.hidden[o.g]) continue;
+        const ox = o.x + o.ox, oy = o.y + o.oy, c = o.def.c || '#fff';
+        if (o.kind === 'portal') {
+          const ang = Math.random() * Math.PI * 2;
+          const rx = 28 + Math.random() * 18, ry = o.def.art === 'speed' ? 22 : 46;
+          const px = ox + Math.cos(ang) * rx, py = oy + Math.sin(ang) * ry;
+          r.spawn(px, py, (ox - px) * 2.2, (oy - py) * 2.2, 0.42, 2.6, c, { shape: 'ci', add: true });
+        } else {
+          const up = o.r === 180 ? -1 : 1;
+          r.spawn(ox + (Math.random() - 0.5) * 22, oy - 12 * up, (Math.random() - 0.5) * 10, up * (50 + Math.random() * 60), 0.5, 2.2, c, { shape: 'ci', add: true });
+        }
+        n++;
+      }
     }
 
     safeForCP() {
