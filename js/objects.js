@@ -123,10 +123,13 @@
   GD.CHANNELS = ['bg', 'g', 'line', 'obj', 'c1', 'c2', 'c3', 'c4'];
   GD.CHANNEL_NAMES = { bg: 'Background', g: 'Ground', line: 'Line', obj: 'Objects', c1: 'Color 1', c2: 'Color 2', c3: 'Color 3', c4: 'Color 4' };
 
+  GD.BG_STYLES = ['squares', 'stripes', 'circles', 'grid', 'tri'];
+  GD.G_STYLES = ['squares', 'tiles', 'stripes'];
+
   GD.DEFAULT_SETTINGS = {
     bg: '#287dff', g: '#0066ff', line: '#ffffff', obj: '#ffffff',
     c1: '#ff4a8d', c2: '#46e3ff', c3: '#ffd23f', c4: '#8cff5a',
-    mode: 'cube', spd: 1, mini: false, flip: false, song: 'neon',
+    mode: 'cube', spd: 1, mini: false, flip: false, song: 'neon', bgStyle: 'squares', gStyle: 'squares',
   };
 
   /** Rotate/flip an object's hitbox definition. Returns null, a rect or a circle relative to centre. */

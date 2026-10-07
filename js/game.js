@@ -427,7 +427,8 @@
       const cols = r.colors(w);
       const pulse = GD.Audio.pulse();
       const t = this.time;
-      r.drawBg(cols, cam);
+      const st = w.settings;
+      r.drawBg(cols, cam, 0, st.bgStyle);
       // attempt label floats in the world
       if (this.attemptX != null && this.attemptX < cam.x + r.VW + 400) {
         r.worldText('Attempt ' + this.attempt, this.attemptX + 210, (w.bnd.ceil != null ? (w.bnd.floor + w.bnd.ceil) / 2 : 130) + 25, 24, {});
@@ -463,8 +464,8 @@
         if (this.practice && this.settings.hitboxes) this.drawHitbox();
       }
       r.drawFront(w, cols, t, pulse);
-      r.drawGround(cols, cam, this.vis.floor, false, pulse);
-      if (this.vis.ceil != null && this.vis.ceil < cam.y + r.VH + 40) r.drawGround(cols, cam, this.vis.ceil, true, pulse);
+      r.drawGround(cols, cam, this.vis.floor, false, pulse, st.gStyle);
+      if (this.vis.ceil != null && this.vis.ceil < cam.y + r.VH + 40) r.drawGround(cols, cam, this.vis.ceil, true, pulse, st.gStyle);
       r.drawParticles();
       if (this.state === 'complete') {
         const k = U.clamp(this.doneT / 0.5, 0, 1);

@@ -527,7 +527,7 @@
           <label>SFX</label><input type="range" min="0" max="100" value="${Math.round(s.sfx * 100)}" id="st-sfx">
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:14px 24px;margin-top:16px">
-          ${chk('showPct', 'Show Percentage')}${chk('showBar', 'Progress Bar')}${chk('autoCP', 'Auto Checkpoints')}${chk('showFps', 'Show FPS')}${chk('hitboxes', 'Show Hitboxes in Practice')}
+          ${chk('showPct', 'Show Percentage')}${chk('showBar', 'Progress Bar')}${chk('autoCP', 'Auto Checkpoints')}${chk('showFps', 'Show FPS')}${chk('hitboxes', 'Show Hitboxes in Practice')}${chk('lowDetail', 'Low Detail Mode')}
         </div>`;
       this.dialog('Settings', html, [
         { label: 'Reset Progress', cls: 'red', fn: () => {
@@ -541,7 +541,11 @@
         { label: 'OK' },
       ]);
       const body = $('d-body');
-      body.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('change', () => { s[el.dataset.k] = el.checked; this.app.persist(); }));
+      body.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('change', () => {
+        s[el.dataset.k] = el.checked;
+        this.app.renderer.lowDetail = !!s.lowDetail;
+        this.app.persist();
+      }));
       const vol = () => {
         s.music = $('st-music').value / 100;
         s.sfx = $('st-sfx').value / 100;

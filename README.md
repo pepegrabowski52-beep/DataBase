@@ -26,6 +26,7 @@ ohne Build-Schritt, ohne Abhängigkeiten. Einfach `index.html` öffnen und spiel
 | R | Level neu starten |
 | Z / X | Checkpoint setzen / entfernen (Übungsmodus) |
 | ← / → | Level auswählen |
+| Controller | A/X/Y oder Steuerkreuz ↑ = Springen, Start = Pause, B = Zurück |
 
 ## Features
 
@@ -63,7 +64,10 @@ Durchlauf einsammelbar und kein Klick erfordert ein Zeitfenster unter 3 Frames (
 * Hauptmenü, Levelauswahl mit Fortschrittsbalken, Pausemenü, „Level Complete“-Bildschirm
 * Icon-Kit: 24 Cubes plus eigene Designs für alle anderen Modi, 54 Farben, Glow – neue Icons werden mit Sternen freigeschaltet
 * Prozedurale Musik (Web Audio Synthesizer): jedes Level hat einen eigenen Song, dazu Menü- und Übungsmusik
-* Funktioniert mit Maus, Tastatur und Touch (Querformat auf dem Handy empfohlen)
+* Funktioniert mit Maus, Tastatur, Touch und Gamepad (Querformat auf dem Handy empfohlen)
+* Installierbar als App (PWA) und offline spielbar, sobald die Seite einmal über HTTP(S) geladen wurde
+* Optionen: Musik/SFX-Lautstärke, Prozentanzeige, Fortschrittsbalken, Auto-Checkpoints, FPS, Hitboxen, *Low Detail Mode*
+* Verschiedene Hintergründe und Böden je Level (auch im Editor wählbar)
 
 **Level-Editor** (Menü → *Create*)
 * Bauen / Bearbeiten / Löschen wie im Original, alle Objekte, Trigger und Startpositionen

@@ -53,7 +53,7 @@
     // ===================================================================== 1
     {
       id: 'neon', name: 'Neon Steps', diff: 'easy', stars: 1, color: '#2a7fff', song: 'neon',
-      settings: { bg: '#287dff', g: '#0066ff' },
+      settings: { bgStyle: 'squares', gStyle: 'squares',  bg: '#287dff', g: '#0066ff' },
       style: { main: 'block', alt: 'block2' },
       map: [
         16,
@@ -157,7 +157,7 @@
     // ===================================================================== 2
     {
       id: 'back', name: 'Back Beat', diff: 'easy', stars: 2, color: '#ff7a1a', song: 'back',
-      settings: { bg: '#ff6a1a', g: '#c43a00', line: '#ffe8c0' },
+      settings: { bgStyle: 'stripes', gStyle: 'squares',  bg: '#ff6a1a', g: '#c43a00', line: '#ffe8c0' },
       style: { main: 'block4', alt: 'block2' },
       map: [
         16,
@@ -260,7 +260,7 @@
     // ===================================================================== 3
     {
       id: 'polar', name: 'Polar Pulse', diff: 'normal', stars: 3, color: '#13c6e8', song: 'polar',
-      settings: { bg: '#1446d8', g: '#0a2a8a' },
+      settings: { bgStyle: 'circles', gStyle: 'tiles',  bg: '#1446d8', g: '#0a2a8a' },
       style: { main: 'block2', alt: 'block' },
       map: [
         16,
@@ -362,7 +362,7 @@
     // ===================================================================== 4
     {
       id: 'dry', name: 'Dry Circuit', diff: 'normal', stars: 4, color: '#e8b414', song: 'dry',
-      settings: { bg: '#d4a015', g: '#8a5a06', line: '#fff2c0' },
+      settings: { bgStyle: 'grid', gStyle: 'stripes',  bg: '#d4a015', g: '#8a5a06', line: '#fff2c0' },
       style: { main: 'block5', alt: 'block' },
       map: [
         16,
@@ -447,7 +447,7 @@
     // ===================================================================== 5
     {
       id: 'base', name: 'Base Line', diff: 'hard', stars: 5, color: '#22c43a', song: 'base',
-      settings: { bg: '#18a83a', g: '#0a5c1c' },
+      settings: { bgStyle: 'tri', gStyle: 'squares',  bg: '#18a83a', g: '#0a5c1c' },
       style: { main: 'block', alt: 'block7' },
       map: [
         16,
@@ -539,7 +539,7 @@
     // ===================================================================== 6
     {
       id: 'rolling', name: 'Rolling Thunder', diff: 'hard', stars: 6, color: '#ff3a3a', song: 'rolling',
-      settings: { bg: '#c4141e', g: '#6a0610' },
+      settings: { bgStyle: 'circles', gStyle: 'stripes',  bg: '#c4141e', g: '#6a0610' },
       style: { main: 'block3', alt: 'block' },
       map: [
         16,
@@ -628,7 +628,7 @@
     // ===================================================================== 7
     {
       id: 'hover', name: 'Hover Drive', diff: 'harder', stars: 7, color: '#14d49a', song: 'hover',
-      settings: { bg: '#0f9e7a', g: '#05523e' },
+      settings: { bgStyle: 'stripes', gStyle: 'tiles',  bg: '#0f9e7a', g: '#05523e' },
       style: { main: 'block7', alt: 'block6' },
       map: [
         16,
@@ -685,7 +685,7 @@
     // ===================================================================== 8
     {
       id: 'wave', name: 'Time Bender', diff: 'harder', stars: 8, color: '#5a5aff', song: 'wave',
-      settings: { bg: '#2a2ab8', g: '#121260', line: '#d0d0ff' },
+      settings: { bgStyle: 'grid', gStyle: 'squares',  bg: '#2a2ab8', g: '#121260', line: '#d0d0ff' },
       style: { main: 'block2', alt: 'block5' },
       map: [
         16,
@@ -743,7 +743,7 @@
     // ===================================================================== 9
     {
       id: 'cycle', name: 'Cycle Core', diff: 'insane', stars: 9, color: '#9a9a9a', song: 'cycle',
-      settings: { bg: '#4a4a52', g: '#1e1e24', line: '#ffffff' },
+      settings: { bgStyle: 'tri', gStyle: 'tiles',  bg: '#4a4a52', g: '#1e1e24', line: '#ffffff' },
       style: { main: 'block4', alt: 'block' },
       map: [
         16,
@@ -835,7 +835,7 @@
     // ===================================================================== 10
     {
       id: 'hyper', name: 'Hyper Drive', diff: 'insane', stars: 10, color: '#ff40c8', song: 'hyper',
-      settings: { bg: '#b8148a', g: '#5a0644', line: '#ffd0f0' },
+      settings: { bgStyle: 'circles', gStyle: 'squares',  bg: '#b8148a', g: '#5a0644', line: '#ffd0f0' },
       style: { main: 'block', alt: 'block7' },
       map: [
         16,
@@ -898,7 +898,7 @@
     // ===================================================================== 11
     {
       id: 'demon', name: 'Demon Gate', diff: 'demon', stars: 12, color: '#8a0a1a', song: 'demon',
-      settings: { bg: '#3a0610', g: '#140206', line: '#ff8080', obj: '#ffd0d0' },
+      settings: { bgStyle: 'tri', gStyle: 'stripes',  bg: '#3a0610', g: '#140206', line: '#ff8080', obj: '#ffd0d0' },
       style: { main: 'block5', alt: 'block4' },
       map: [
         16,

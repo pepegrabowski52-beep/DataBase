@@ -505,8 +505,8 @@
       if (this.S !== this.lastS) {
         this.sprites.clear();
         this.lastS = this.S;
-        this.bgTile = null;
-        this.gTile = null;
+        this.bgTiles = null;
+        this.gTiles = null;
       }
     }
 
@@ -589,94 +589,191 @@
     }
 
     // ------------------------------------------------------------------- background
-    makeBgTile() {
+    /** Background tile (256 units, grey-scale alpha, tinted by the bg colour underneath). */
+    makeBgTile(style) {
       const res = Math.min(this.S, 2.5);
       const T = 256;
       const px = Math.round(T * res);
       const c = makeCanvas(px, px);
       const g = c.getContext('2d');
       g.scale(res, res);
-      const sq = 128;
-      for (let i = 0; i < 2; i++) {
-        for (let j = 0; j < 2; j++) {
-          const x = i * sq, y = j * sq;
-          const gr = g.createLinearGradient(0, y, 0, y + sq);
-          gr.addColorStop(0, 'rgba(255,255,255,0.10)');
-          gr.addColorStop(0.5, 'rgba(255,255,255,0.02)');
-          gr.addColorStop(1, 'rgba(0,0,0,0.16)');
-          g.fillStyle = gr;
-          g.fillRect(x, y, sq, sq);
-          g.lineWidth = 3;
-          g.strokeStyle = 'rgba(0,0,0,0.16)';
-          g.strokeRect(x + 1.5, y + 1.5, sq - 3, sq - 3);
-          g.lineWidth = 1.5;
-          g.strokeStyle = 'rgba(255,255,255,0.07)';
-          g.strokeRect(x + 6, y + 6, sq - 12, sq - 12);
+      const rnd = U.rng(U.hashStr(style || 'squares'));
+      const W = 'rgba(255,255,255,', B = 'rgba(0,0,0,';
+      switch (style) {
+        case 'stripes': {
+          g.save();
+          g.beginPath(); g.rect(0, 0, T, T); g.clip();
+          for (let i = -T; i < T * 2; i += 64) {
+            g.fillStyle = W + '0.06)';
+            g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 32, 0); g.lineTo(i + 32 - T, T); g.lineTo(i - T, T); g.closePath(); g.fill();
+            g.strokeStyle = B + '0.12)'; g.lineWidth = 3;
+            g.beginPath(); g.moveTo(i + 32, 0); g.lineTo(i + 32 - T, T); g.stroke();
+          }
+          g.restore();
+          const gr = g.createLinearGradient(0, 0, 0, T);
+          gr.addColorStop(0, W + '0.06)'); gr.addColorStop(1, B + '0.10)');
+          g.fillStyle = gr; g.fillRect(0, 0, T, T);
+          break;
+        }
+        case 'circles': {
+          const gr = g.createLinearGradient(0, 0, 0, T);
+          gr.addColorStop(0, W + '0.05)'); gr.addColorStop(1, B + '0.12)');
+          g.fillStyle = gr; g.fillRect(0, 0, T, T);
+          for (let i = 0; i < 7; i++) {
+            const x = rnd() * T, y = rnd() * T, r = 20 + rnd() * 60;
+            for (const dx of [-T, 0, T]) for (const dy of [-T, 0, T]) {
+              g.beginPath(); g.arc(x + dx, y + dy, r, 0, Math.PI * 2);
+              g.fillStyle = (i % 2 ? W + '0.05)' : B + '0.07)'); g.fill();
+              g.lineWidth = 3; g.strokeStyle = (i % 2 ? W + '0.08)' : B + '0.1)'); g.stroke();
+            }
+          }
+          break;
+        }
+        case 'grid': {
+          const gr = g.createLinearGradient(0, 0, 0, T);
+          gr.addColorStop(0, W + '0.07)'); gr.addColorStop(1, B + '0.12)');
+          g.fillStyle = gr; g.fillRect(0, 0, T, T);
+          for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
+            const v = rnd();
+            if (v < 0.18) { g.fillStyle = W + '0.06)'; g.fillRect(i * 32 + 2, j * 32 + 2, 28, 28); }
+            else if (v < 0.3) { g.fillStyle = B + '0.08)'; g.fillRect(i * 32 + 2, j * 32 + 2, 28, 28); }
+          }
+          g.strokeStyle = B + '0.13)'; g.lineWidth = 2;
+          g.beginPath();
+          for (let i = 0; i <= T; i += 32) { g.moveTo(i, 0); g.lineTo(i, T); g.moveTo(0, i); g.lineTo(T, i); }
+          g.stroke();
+          break;
+        }
+        case 'tri': {
+          const gr = g.createLinearGradient(0, 0, 0, T);
+          gr.addColorStop(0, W + '0.06)'); gr.addColorStop(1, B + '0.12)');
+          g.fillStyle = gr; g.fillRect(0, 0, T, T);
+          const n = 4, w = T / n;
+          for (let row = 0; row < n; row++) {
+            for (let i = 0; i <= n; i++) {
+              const x = i * w - (row % 2 ? w / 2 : 0), y = row * w;
+              g.beginPath(); g.moveTo(x, y + w); g.lineTo(x + w / 2, y); g.lineTo(x + w, y + w); g.closePath();
+              g.fillStyle = (i + row) % 2 ? W + '0.05)' : B + '0.06)'; g.fill();
+              g.lineWidth = 2; g.strokeStyle = B + '0.1)'; g.stroke();
+            }
+          }
+          break;
+        }
+        default: {
+          const sq = 128;
+          for (let i = 0; i < 2; i++) {
+            for (let j = 0; j < 2; j++) {
+              const x = i * sq, y = j * sq;
+              const gr = g.createLinearGradient(0, y, 0, y + sq);
+              gr.addColorStop(0, W + '0.10)');
+              gr.addColorStop(0.5, W + '0.02)');
+              gr.addColorStop(1, B + '0.16)');
+              g.fillStyle = gr;
+              g.fillRect(x, y, sq, sq);
+              g.lineWidth = 3;
+              g.strokeStyle = B + '0.16)';
+              g.strokeRect(x + 1.5, y + 1.5, sq - 3, sq - 3);
+              g.lineWidth = 1.5;
+              g.strokeStyle = W + '0.07)';
+              g.strokeRect(x + 6, y + 6, sq - 12, sq - 12);
+            }
+          }
+          g.fillStyle = B + '0.08)';
+          g.fillRect(16, 144, 48, 48);
+          g.fillRect(176, 24, 56, 56);
+          g.fillStyle = W + '0.05)';
+          g.fillRect(150, 160, 70, 70);
+          g.fillRect(30, 30, 40, 40);
         }
       }
-      g.fillStyle = 'rgba(0,0,0,0.08)';
-      g.fillRect(16, 144, 48, 48);
-      g.fillRect(176, 24, 56, 56);
-      g.fillStyle = 'rgba(255,255,255,0.05)';
-      g.fillRect(150, 160, 70, 70);
-      g.fillRect(30, 30, 40, 40);
-      this.bgTile = { c, T, res };
+      return { c, T, res };
     }
 
-    drawBg(cols, cam, layerShift) {
+    drawBg(cols, cam, layerShift, style) {
       const ctx = this.ctx;
       ctx.fillStyle = css(cols.bg);
       ctx.fillRect(0, 0, this.W, this.H);
+      if (this.lowDetail) return;
       this.mirrorOn();
-      if (!this.bgTile) this.makeBgTile();
-      const t = this.bgTile;
-      const scale = this.S / t.res * 1.25;
-      const tw = t.T * t.res * scale;
-      const ox = -(((cam.x * 0.12 + (layerShift || 0)) * this.S) % tw);
-      const oy = ((cam.y + 90) * 0.06 * this.S) % tw;
+      const key = style || 'squares';
+      if (!this.bgTiles) this.bgTiles = {};
+      const t = this.bgTiles[key] || (this.bgTiles[key] = this.makeBgTile(key));
+      const tw = Math.max(8, Math.round(t.T * this.S * 1.25));
+      const ox = -Math.round(((cam.x * 0.12 + (layerShift || 0)) * this.S) % tw);
+      const oy = Math.round(((cam.y + 90) * 0.06 * this.S) % tw);
       for (let x = ox - tw; x < this.W; x += tw) {
         for (let y = this.H - tw + oy; y > -tw; y -= tw) {
-          ctx.drawImage(t.c, x, y, tw + 1, tw + 1);
+          ctx.drawImage(t.c, x, y, tw, tw);
         }
       }
       this.mirrorOff();
     }
 
-    makeGroundTile() {
+    makeGroundTile(style) {
       const res = Math.min(this.S, 3);
       const T = 120;
       const px = Math.round(T * res);
       const c = makeCanvas(px, px);
       const g = c.getContext('2d');
       g.scale(res, res);
-      for (let i = 0; i < 2; i++) {
-        for (let j = 0; j < 2; j++) {
-          const x = i * 60, y = j * 60;
-          const gr = g.createLinearGradient(0, y, 0, y + 60);
-          gr.addColorStop(0, 'rgba(255,255,255,0.10)');
-          gr.addColorStop(1, 'rgba(0,0,0,0.18)');
-          g.fillStyle = gr;
-          g.fillRect(x, y, 60, 60);
-          g.lineWidth = 2;
-          g.strokeStyle = 'rgba(0,0,0,0.22)';
-          g.strokeRect(x + 1, y + 1, 58, 58);
-          g.lineWidth = 1;
-          g.strokeStyle = 'rgba(255,255,255,0.08)';
-          g.strokeRect(x + 4, y + 4, 52, 52);
+      if (style === 'tiles') {
+        for (let i = 0; i < 4; i++) {
+          for (let j = 0; j < 4; j++) {
+            const x = i * 30, y = j * 30;
+            const gr = g.createLinearGradient(0, y, 0, y + 30);
+            gr.addColorStop(0, (i + j) % 2 ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)');
+            gr.addColorStop(1, 'rgba(0,0,0,0.16)');
+            g.fillStyle = gr;
+            g.fillRect(x, y, 30, 30);
+            g.lineWidth = 1.5;
+            g.strokeStyle = 'rgba(0,0,0,0.25)';
+            g.strokeRect(x + 0.75, y + 0.75, 28.5, 28.5);
+          }
+        }
+      } else if (style === 'stripes') {
+        const gr = g.createLinearGradient(0, 0, 0, T);
+        gr.addColorStop(0, 'rgba(255,255,255,0.08)');
+        gr.addColorStop(1, 'rgba(0,0,0,0.2)');
+        g.fillStyle = gr;
+        g.fillRect(0, 0, T, T);
+        g.save();
+        g.beginPath(); g.rect(0, 0, T, T); g.clip();
+        g.fillStyle = 'rgba(0,0,0,0.14)';
+        for (let i = -T; i < T * 2; i += 40) {
+          g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 20, 0); g.lineTo(i + 20 - T, T); g.lineTo(i - T, T); g.closePath(); g.fill();
+        }
+        g.restore();
+      } else {
+        for (let i = 0; i < 2; i++) {
+          for (let j = 0; j < 2; j++) {
+            const x = i * 60, y = j * 60;
+            const gr = g.createLinearGradient(0, y, 0, y + 60);
+            gr.addColorStop(0, 'rgba(255,255,255,0.10)');
+            gr.addColorStop(1, 'rgba(0,0,0,0.18)');
+            g.fillStyle = gr;
+            g.fillRect(x, y, 60, 60);
+            g.lineWidth = 2;
+            g.strokeStyle = 'rgba(0,0,0,0.22)';
+            g.strokeRect(x + 1, y + 1, 58, 58);
+            g.lineWidth = 1;
+            g.strokeStyle = 'rgba(255,255,255,0.08)';
+            g.strokeRect(x + 4, y + 4, 52, 52);
+          }
         }
       }
-      this.gTile = { c, T, res };
+      return { c, T, res };
     }
 
     /** Draws ground band below y=floor (or ceiling band above y=ceil if top=true). */
-    drawGround(cols, cam, y, top, pulse) {
+    drawGround(cols, cam, y, top, pulse, style) {
       const ctx = this.ctx;
       const lineY = this.H - (y - cam.y) * this.S;
       if (!top && lineY > this.H + 2) return;
       if (top && lineY < -2) return;
-      if (!this.gTile) this.makeGroundTile();
-      const t = this.gTile;
-      const tw = t.T * this.S;
+      const key = style || 'squares';
+      if (!this.gTiles) this.gTiles = {};
+      const t = this.gTiles[key] || (this.gTiles[key] = this.makeGroundTile(key));
+      const tw = Math.max(8, Math.round(t.T * this.S));
       const y0 = top ? Math.min(lineY, this.H) : Math.max(lineY, 0);
       ctx.save();
       this.mirrorOn();
@@ -686,11 +783,12 @@
       ctx.clip();
       ctx.fillStyle = css(cols.g);
       ctx.fillRect(0, 0, this.W, this.H);
-      const ox = -((cam.x * this.S) % tw);
+      const ox = -Math.round((cam.x * this.S) % tw);
+      const ly = Math.round(lineY);
       if (top) {
-        for (let x = ox - tw; x < this.W; x += tw) for (let yy = lineY - tw; yy > -tw; yy -= tw) ctx.drawImage(t.c, x, yy, tw + 1, tw + 1);
+        for (let x = ox - tw; x < this.W; x += tw) for (let yy = ly - tw; yy > -tw; yy -= tw) ctx.drawImage(t.c, x, yy, tw, tw);
       } else {
-        for (let x = ox - tw; x < this.W; x += tw) for (let yy = lineY; yy < this.H; yy += tw) ctx.drawImage(t.c, x, yy, tw + 1, tw + 1);
+        for (let x = ox - tw; x < this.W; x += tw) for (let yy = ly; yy < this.H; yy += tw) ctx.drawImage(t.c, x, yy, tw, tw);
       }
       const sh = ctx.createLinearGradient(0, lineY, 0, lineY + (top ? -1 : 1) * 40 * this.S);
       sh.addColorStop(0, 'rgba(0,0,0,0.35)');
@@ -878,6 +976,7 @@
     // ------------------------------------------------------------------- particles
     spawn(x, y, vx, vy, life, size, color, opts) {
       if (this.parts.length > 1200) return;
+      if (this.lowDetail && Math.random() < 0.7) return;
       const o = opts || {};
       this.parts.push({
         x, y, vx, vy, life, t: 0, size, color, g: o.g || 0, shape: o.shape || 'sq',

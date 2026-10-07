@@ -1,0 +1,14 @@
+{
+  "name": "Geometry Dash Web",
+  "short_name": "GD Web",
+  "description": "Geometry Dash remake for the browser",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b1a3a",
+  "theme_color": "#287dff",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

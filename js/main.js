@@ -9,7 +9,7 @@
   function defaultSave() {
     return {
       v: 1,
-      settings: { music: 0.8, sfx: 0.8, showPct: true, showBar: true, autoCP: true, showFps: false, hitboxes: false },
+      settings: { music: 0.8, sfx: 0.8, showPct: true, showBar: true, autoCP: true, showFps: false, hitboxes: false, lowDetail: false },
       icons: { c1: '#7dff00', c2: '#00ffff', glow: false, sel: 'cube', cube: 0, ship: 0, ball: 0, ufo: 0, wave: 0, robot: 0, spider: 0, swing: 0 },
       levels: {},
       stats: { jumps: 0, attempts: 0, deaths: 0, completed: 0 },
@@ -98,9 +98,14 @@
       this.cv = document.getElementById('cv');
       this.renderer = new GD.Renderer(this.cv);
       this.loadSave();
+      this.renderer.lowDetail = !!this.save.settings.lowDetail;
       this.menuBg = new MenuBg(this);
       this.bindInput();
       root.addEventListener('resize', () => this.onResize());
+      root.addEventListener('gamepadconnected', () => { this.hasPad = true; GD.UI.toast('Controller connected'); });
+      if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
       root.addEventListener('orientationchange', () => setTimeout(() => this.onResize(), 200));
       document.addEventListener('visibilitychange', () => {
         if (document.hidden && this.scene === 'game' && this.game && this.game.state === 'play' && !this.game.paused && !this.game.opts.test) this.pause(true);
@@ -129,6 +134,7 @@
     },
     resetSave() {
       this.save = defaultSave();
+      this.renderer.lowDetail = false;
       this.persist();
     },
     levelRecord(id) {
@@ -223,10 +229,34 @@
       GD.UI.onResize();
     },
 
+    /** Gamepad: face buttons / d-pad up = jump, start = pause, B/back = back in menus. */
+    pollGamepad() {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      let jump = false, start = false, back = false;
+      for (const gp of pads) {
+        if (!gp) continue;
+        const b = (i) => gp.buttons[i] && gp.buttons[i].pressed;
+        if (b(0) || b(2) || b(3) || b(12) || b(7) || b(6)) jump = true;
+        if (b(9)) start = true;
+        if (b(1) || b(8)) back = true;
+      }
+      const prev = this.padPrev || {};
+      this.padPrev = { jump, start, back };
+      const g = this.isGameInput();
+      if (jump !== !!prev.jump) {
+        if (jump) this.input.keys.add('pad'); else this.input.keys.delete('pad');
+        if (g || !jump) this.updateHold();
+        else if (jump && this.scene === 'levels') GD.UI.playPage();
+      }
+      if (start && !prev.start && this.scene === 'game' && this.game) this.pause(!this.game.paused);
+      if (back && !prev.back && this.scene !== 'game' && this.scene !== 'editor') GD.UI.back();
+    },
+
     // ---------------------------------------------------------------- loop
     loop(t) {
       const dt = Math.min(0.1, Math.max(0, (t - this.last) / 1000));
       this.last = t;
+      if (this.hasPad) this.pollGamepad();
       try {
         if (this.scene === 'game' && this.game) {
           this.game.update(dt);

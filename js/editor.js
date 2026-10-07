@@ -471,6 +471,8 @@
       const html = `<div class="form-grid">
         <label>Name</label><input type="text" id="ls-name" maxlength="40" value="${String(this.ul.name).replace(/"/g, '&quot;')}">
         <label>Song</label><div style="display:flex;gap:8px"><select id="ls-song">${songs}</select><button class="gbtn small blue" id="ls-prev" type="button">▶</button></div>
+        <label>Background</label><select id="ls-bg">${GD.BG_STYLES.map((b) => `<option ${b === (s.bgStyle || 'squares') ? 'selected' : ''}>${b}</option>`).join('')}</select>
+        <label>Ground</label><select id="ls-gs">${GD.G_STYLES.map((b) => `<option ${b === (s.gStyle || 'squares') ? 'selected' : ''}>${b}</option>`).join('')}</select>
         <label>Start mode</label><select id="ls-mode">${GD.MODES.map((m) => `<option ${m === s.mode ? 'selected' : ''}>${m}</option>`).join('')}</select>
         <label>Start speed</label><select id="ls-spd">${['0.5x', '1x', '2x', '3x', '4x'].map((m, i) => `<option value="${i}" ${i === +s.spd ? 'selected' : ''}>${m}</option>`).join('')}</select>
         <label>Mini</label><input type="checkbox" id="ls-mini" ${s.mini ? 'checked' : ''} style="width:24px;height:24px">
@@ -483,6 +485,8 @@
         { label: 'Apply', fn: () => {
           this.ul.name = ($('ls-name').value.trim() || this.ul.name).slice(0, 40);
           s.song = $('ls-song').value;
+          s.bgStyle = $('ls-bg').value;
+          s.gStyle = $('ls-gs').value;
           s.mode = $('ls-mode').value;
           s.spd = +$('ls-spd').value;
           s.mini = $('ls-mini').checked;
@@ -753,7 +757,7 @@
       r.cam = cam;
       const cols = {};
       for (const c of GD.CHANNELS) cols[c] = U.hexToRgb(this.settings[c]);
-      r.drawBg(cols, cam);
+      r.drawBg(cols, cam, 0, this.settings.bgStyle);
       // grid
       ctx.lineWidth = 1;
       ctx.strokeStyle = 'rgba(0,0,0,0.22)';
@@ -781,7 +785,7 @@
         r.drawObject(o, d, cols, this.time, 0, 1, false);
       }
       for (const o of fronts) r.drawObject(o, OBJ[o.t], cols, this.time, 0, 1, false);
-      r.drawGround(cols, cam, 0, false, 0);
+      r.drawGround(cols, cam, 0, false, 0, this.settings.gStyle);
       // group labels / selection
       ctx.lineWidth = 2;
       for (const o of this.objs) {
