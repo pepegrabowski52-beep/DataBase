@@ -82,7 +82,7 @@ lässt sich umgehen (z. B. indem man über einen Abschnitt hinwegfliegt).
 * Rückgängig / Wiederholen (Strg+Z / Strg+Y), Zoom (Mausrad mit Strg, +/–), Kamera (Rechtsklick-Ziehen, Leertaste+Ziehen, A/D, Pinch auf Touch)
 * Level-Einstellungen: Name, Song, Startmodus, Startgeschwindigkeit, alle 8 Farbkanäle
 * Testspielen (Enter) inkl. Anzeige der gespielten Route; ein komplett geschafftes Level gilt als *verifiziert*
-* Level als Code teilen und importieren oder als `.gdlevel.json` herunterladen
+* Level per Link teilen (der Link öffnet das Level direkt im Browser), als Code importieren oder als `.gdlevel.json` herunterladen
 
 ## Projektstruktur
 
