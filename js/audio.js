@@ -18,19 +18,19 @@
   const ARR = {
     std: [
       { bars: 4, parts: 'pad hat arp' },
-      { bars: 4, parts: 'pad hat kick bass arp roll' },
-      { bars: 16, parts: 'kick snare hat bass lead pad arp crash' },
-      { bars: 8, parts: 'pad arp lead2 hat bass' },
-      { bars: 16, parts: 'kick snare hat bass lead2 pad arp crash ohat' },
+      { bars: 4, parts: 'pad hat kick bass arp roll rise' },
+      { bars: 16, parts: 'kick snare hat bass lead pad arp crash fill' },
+      { bars: 8, parts: 'pad arp lead2 hat bass rise' },
+      { bars: 16, parts: 'kick snare hat bass lead2 pad arp crash ohat fill harm' },
       { bars: 8, parts: 'kick snare hat bass arp pad crash' },
     ],
     fast: [
       { bars: 2, parts: 'pad arp' },
-      { bars: 4, parts: 'pad arp kick hat roll bass' },
-      { bars: 16, parts: 'kick snare hat bass lead pad arp crash' },
-      { bars: 4, parts: 'pad arp bass hat' },
-      { bars: 16, parts: 'kick snare hat ohat bass lead2 pad arp crash' },
-      { bars: 8, parts: 'kick snare hat bass lead pad crash' },
+      { bars: 4, parts: 'pad arp kick hat roll bass rise' },
+      { bars: 16, parts: 'kick snare hat bass lead pad arp crash fill' },
+      { bars: 4, parts: 'pad arp bass hat rise' },
+      { bars: 16, parts: 'kick snare hat ohat bass lead2 pad arp crash fill harm' },
+      { bars: 8, parts: 'kick snare hat bass lead pad crash fill' },
     ],
     chill: [
       { bars: 4, parts: 'pad arp' },
@@ -117,7 +117,7 @@
           let d = n.d;
           if (variant && b >= 6 && n.i >= motif.length - 3) d += variant;
           if (b === 7 && n.i === motif.length - 1) d = 7;
-          notes.push({ st: n.st % 16, len: n.len, m: deg(chordDeg + d) + 12 });
+          notes.push({ st: n.st % 16, len: n.len, m: deg(chordDeg + d) + 12, dg: chordDeg + d });
         }
         bars.push(notes);
       }
@@ -300,7 +300,11 @@
       if (has('snare') && dr.snare[st] === 'x') this.snare(cur.bus, t, 0.6);
       if (has('hat') && dr.hat[st] === 'x') this.hat(cur.bus, t, st % 4 === 2 ? 0.22 : 0.13, false);
       if (has('ohat') && dr.ohat[st] === 'x') this.hat(cur.bus, t, 0.16, true);
-      if (has('crash') && sec.first && st === 0) this.crash(cur.bus, t);
+      if (has('crash') && sec.first && st === 0) { this.crash(cur.bus, t); if (bar > 0) this.boom(cur.bus, t); }
+      // noise riser over the last bar before a drop
+      if (has('rise') && sec.barIn === sec.bars - 1 && st === 0) this.riser(cur.bus, t, beat * 16);
+      // snare fill at the end of every 8 bars
+      if (has('fill') && sec.barIn % 8 === 7 && st >= 12) this.snare(cur.bus, t, 0.3 + (st - 12) * 0.1);
       if (!has('kick') && def.drums !== 'none' && st % 4 === 0) this.kicks.push(t);
 
       if (has('bass')) {
@@ -323,7 +327,10 @@
       if (leadPart) {
         const notes = C[leadPart][bar % 8];
         for (const nt of notes) {
-          if (nt.st === st) this.lead(cur.bus, cur.rev, cur.dly, t, mtof(nt.m), nt.len * beat * 0.92, def.lead);
+          if (nt.st !== st) continue;
+          this.lead(cur.bus, cur.rev, cur.dly, t, mtof(nt.m), nt.len * beat * 0.92, def.lead);
+          // second voice a third below in the big sections
+          if (has('harm')) this.lead(cur.bus, cur.rev, cur.dly, t, mtof(C.deg(nt.dg - 2) + 12), nt.len * beat * 0.92, def.lead, 0.45);
         }
       }
     },
@@ -388,6 +395,33 @@
       g.gain.setValueAtTime(v, t);
       g.gain.exponentialRampToValueAtTime(0.001, t + d);
       n.connect(f).connect(g).connect(bus);
+    },
+
+    /** Rising filtered noise (build-up before a drop). */
+    riser(bus, t, dur) {
+      const c = this.ctx;
+      const n = this.noiseSrc(t, dur), f = c.createBiquadFilter(), g = c.createGain();
+      f.type = 'bandpass'; f.Q.value = 2.5;
+      f.frequency.setValueAtTime(400, t);
+      f.frequency.exponentialRampToValueAtTime(7000, t + dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.16, t + dur * 0.97);
+      g.gain.linearRampToValueAtTime(0.0001, t + dur);
+      n.connect(f).connect(g).connect(bus);
+    },
+
+    /** Deep sub hit on the first beat of a drop. */
+    boom(bus, t) {
+      const c = this.ctx;
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(90, t);
+      o.frequency.exponentialRampToValueAtTime(32, t + 0.9);
+      g.gain.setValueAtTime(0.55, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
+      o.connect(g).connect(bus);
+      o.start(t);
+      o.stop(t + 1.15);
     },
 
     crash(bus, t) {
@@ -459,14 +493,14 @@
       o.stop(t + dur + 0.35);
     },
 
-    lead(bus, rev, dly, t, fr, dur, type) {
+    lead(bus, rev, dly, t, fr, dur, type, level) {
       const c = this.ctx;
       const f = c.createBiquadFilter(), g = c.createGain();
       f.type = 'lowpass';
       f.Q.value = 2;
       f.frequency.setValueAtTime(type === 'chip' ? 9000 : 5200, t);
       f.frequency.exponentialRampToValueAtTime(type === 'pluck' ? 900 : 2200, t + 0.3);
-      const vol = type === 'pluck' ? 0.16 : type === 'chip' ? 0.075 : 0.085;
+      const vol = (type === 'pluck' ? 0.16 : type === 'chip' ? 0.075 : 0.085) * (level || 1);
       this.env(g, t, 0.006, vol, Math.max(0.03, dur - 0.05), type === 'pluck' ? 0.35 : 0.12);
       f.connect(g);
       g.connect(bus);
