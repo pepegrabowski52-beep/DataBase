@@ -259,7 +259,7 @@
 
     // -------------------------------------------------------------- level select
     pages() {
-      return GD.LEVELS.length + 1;
+      return this.app.levelList().length + 1;
     },
 
     turn(d) {
@@ -278,13 +278,14 @@
       card.style.animation = 'none';
       void card.offsetWidth;
       card.style.animation = dir ? `popin 0.25s cubic-bezier(.3,1.6,.5,1)` : '';
-      if (this.page === GD.LEVELS.length) {
+      const levels = this.app.levelList();
+      if (this.page === levels.length) {
         card.className = 'lv-card special';
         card.style.background = 'linear-gradient(180deg, #8a5cff, #4a26c9)';
         card.innerHTML = `<div class="lv-name">Your Levels<div style="font-size:0.42em;margin-top:0.4em">Build & play custom levels</div></div>`;
         bars.innerHTML = '';
       } else {
-        const def = GD.LEVELS[this.page];
+        const def = levels[this.page];
         const rec = this.app.save.levels[def.id] || {};
         card.className = 'lv-card';
         card.style.background = `linear-gradient(180deg, ${def.color}, ${U.rgbToHex(U.shade(U.hexToRgb(def.color), -0.35))})`;
@@ -351,8 +352,9 @@
     },
 
     playPage() {
-      if (this.page === GD.LEVELS.length) { this.click(); this.show('creator'); return; }
-      const def = GD.LEVELS[this.page];
+      const levels = this.app.levelList();
+      if (this.page === levels.length) { this.click(); this.show('creator'); return; }
+      const def = levels[this.page];
       $('s-levels').classList.add('hidden');
       this.app.startLevel(this.app.builtinInfo(def), { returnTo: 'levels' });
     },
@@ -737,6 +739,9 @@
         royal: { msg: 'Kneel. A crown fit for a cube.', unlock: 'royal' },
         glitch: { msg: 'Th-th-that w-wasn\'t s-supposed to h-happen...', unlock: 'glitch' },
       };
+      for (const l of GD.LEVELS) {
+        if (l.secret) CODES[l.secretCode || l.secret] = { msg: l.secretMsg || 'A secret level has appeared in the level list...', unlock: l.secret };
+      }
       const HINTS = [
         'Speak the words and the Vault shall open...',
         'Someone keeps smirking at me. ( ͡° ͜ʖ ͡°)',

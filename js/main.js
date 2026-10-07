@@ -199,9 +199,15 @@
       if (!this.save.levels[id]) this.save.levels[id] = { best: 0, pbest: 0, att: 0, jumps: 0, done: false, coins: [false, false, false] };
       return this.save.levels[id];
     },
+    /** Built-in levels shown in the level select (secret levels only once unlocked in the Vault). */
+    levelList() {
+      const v = this.save.vault || {};
+      return GD.LEVELS.filter((l) => !l.secret || v[l.secret]);
+    },
+
     totals() {
       let stars = 0, coins = 0, maxStars = 0, maxCoins = 0;
-      for (const def of GD.LEVELS) {
+      for (const def of this.levelList()) {
         const r = this.save.levels[def.id];
         maxStars += def.stars;
         maxCoins += 3;
