@@ -130,6 +130,7 @@
       this.menuBg = new MenuBg(this);
       this.bindInput();
       root.addEventListener('resize', () => this.onResize());
+      root.addEventListener('hashchange', () => { if (GD.UI.cur !== 'loading' && !this.game && GD.UI.cur !== 'editor') this.checkShared(); });
       root.addEventListener('gamepadconnected', () => { this.hasPad = true; GD.UI.toast('Controller connected'); });
       if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -271,6 +272,19 @@
         if (this.scene === 'editor' && this.editor && !this.editor.test) { e.preventDefault(); this.editor.onWheel(e); }
       }, { passive: false });
       cv.addEventListener('contextmenu', (e) => e.preventDefault());
+    },
+
+    /** A level link (#lvl=<code>) was opened: offer to play / save the level. */
+    checkShared() {
+      const m = location.hash.match(/^#lvl=(.+)$/);
+      if (!m) return;
+      let code = m[1];
+      try { code = decodeURIComponent(code); } catch (e) { /* keep raw */ }
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+      GD.decodeLevelAsync(code).then((lvl) => {
+        if (!lvl) { GD.UI.toast('This level link is broken or not supported by this browser'); return; }
+        GD.UI.sharedLevel(lvl);
+      });
     },
 
     onResize() {

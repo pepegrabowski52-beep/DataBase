@@ -176,7 +176,7 @@
               GD.Audio.init();
               GD.Audio.setVolumes(this.app.save.settings.music, this.app.save.settings.sfx);
               // show the menu after this click has finished so it cannot fall through onto a button
-              setTimeout(() => { this.show('menu'); this.app.menuMusic(); }, 30);
+              setTimeout(() => { this.show('menu'); this.app.menuMusic(); this.app.checkShared(); }, 30);
             };
             root.addEventListener('click', start, true);
             root.addEventListener('keydown', start, true);
@@ -472,18 +472,21 @@
       });
     },
 
-    shareLevel(ul) {
-      const code = GD.encodeLevel(ul);
-      this.dialog('Share Level', `<p>Copy this code and send it to a friend. They can paste it with <b>Import Code</b>.</p><textarea id="share-code" readonly>${esc(code)}</textarea>`, [
-        { label: 'Copy', cls: '', fn: () => {
-          const ta = $('share-code');
-          ta.select();
-          let ok = false;
-          try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ }
-          if (navigator.clipboard) navigator.clipboard.writeText(code).then(() => this.toast('Copied!'), () => {});
-          else this.toast(ok ? 'Copied!' : 'Select the text and copy it');
-          return false;
-        } },
+    copyText(text, what) {
+      const ta = $('share-code');
+      if (ta) { ta.value = text; ta.select(); }
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ }
+      if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => this.toast(what + ' copied!'), () => this.toast(ok ? what + ' copied!' : 'Select the text and copy it'));
+      else this.toast(ok ? what + ' copied!' : 'Select the text and copy it');
+    },
+
+    async shareLevel(ul) {
+      const code = await GD.encodeLevelPacked(ul);
+      const link = location.href.split('#')[0] + '#lvl=' + code;
+      this.dialog('Share Level', `<p>Send the link to a friend – it opens the level right in the browser. Or copy the code; it can be pasted with <b>Import Code</b>.</p><textarea id="share-code" readonly>${esc(link)}</textarea>`, [
+        { label: 'Copy Link', cls: '', fn: () => { this.copyText(link, 'Link'); return false; } },
+        { label: 'Copy Code', cls: 'pink', fn: () => { this.copyText(code, 'Code'); return false; } },
         { label: 'Download', cls: 'blue', fn: () => {
           const blob = new Blob([JSON.stringify({ name: ul.name, settings: ul.settings, objects: ul.objects })], { type: 'application/json' });
           const a = document.createElement('a');
@@ -497,25 +500,58 @@
       ]);
     },
 
+    /** Add a decoded level to "Your Levels" (or return the copy imported earlier from the same code). */
+    addImported(lvl) {
+      const src = U.hashStr(JSON.stringify([lvl.name || '', lvl.objects || []]));
+      const old = this.app.userLevels.find((l) => l.src === src);
+      if (old) return old;
+      const ul = {
+        id: 'u_' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36),
+        name: (lvl.name || 'Imported').slice(0, 40), settings: Object.assign({}, GD.DEFAULT_SETTINGS, lvl.settings || {}),
+        objects: lvl.objects || [], created: Date.now(), updated: Date.now(), verified: false,
+      };
+      ul.src = src;
+      this.app.userLevels.push(ul);
+      this.app.persistUser();
+      return ul;
+    },
+
     importLevel() {
-      this.dialog('Import Level', `<p>Paste a level code (or the content of a .gdlevel.json file):</p><textarea id="imp-code" placeholder="Level code..."></textarea>`, [
+      this.dialog('Import Level', `<p>Paste a level code, a level link or the content of a .gdlevel.json file:</p><textarea id="imp-code" placeholder="Level code..."></textarea>`, [
         { label: 'Import', cls: '', fn: () => {
-          const txt = $('imp-code').value.trim();
-          const lvl = GD.decodeLevel(txt);
-          if (!lvl) { this.toast('Invalid level code'); return false; }
-          const ul = {
-            id: 'u_' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36),
-            name: (lvl.name || 'Imported').slice(0, 40), settings: Object.assign({}, GD.DEFAULT_SETTINGS, lvl.settings || {}),
-            objects: lvl.objects || [], created: Date.now(), updated: Date.now(), verified: false,
-          };
-          this.app.userLevels.push(ul);
-          this.app.persistUser();
-          this.renderCreator();
-          this.toast('Imported "' + ul.name + '"');
+          let txt = $('imp-code').value.trim();
+          const m = txt.match(/#lvl=(.+)$/);
+          if (m) txt = decodeURIComponent(m[1]);
+          GD.decodeLevelAsync(txt).then((lvl) => {
+            if (!lvl) { this.toast('Invalid level code'); return; }
+            this.closeDialog();
+            const ul = this.addImported(lvl);
+            this.renderCreator();
+            this.toast('Imported "' + ul.name + '"');
+          });
+          return false;
         } },
         { label: 'Cancel', cls: 'gray' },
       ]);
       setTimeout(() => $('imp-code') && $('imp-code').focus(), 50);
+    },
+
+    /** A level opened from a share link: play it or save it to "Your Levels". */
+    sharedLevel(lvl) {
+      const n = (lvl.objects || []).length;
+      this.dialog('Shared Level', `<p>Someone shared a level with you:</p><p style="font-size:1.4em"><b>${esc(lvl.name || 'Unnamed')}</b></p><p>${n} objects</p>`, [
+        { label: 'Play', cls: '', fn: () => {
+          const ul = this.addImported(lvl);
+          $('s-' + this.cur).classList.add('hidden');
+          this.app.startLevel(this.app.userInfo(ul), { returnTo: 'creator' });
+        } },
+        { label: 'Save', cls: 'blue', fn: () => {
+          const ul = this.addImported(lvl);
+          this.toast('Saved "' + ul.name + '" to Your Levels');
+          if (this.cur === 'creator') this.renderCreator();
+        } },
+        { label: 'Cancel', cls: 'gray' },
+      ]);
     },
 
     // -------------------------------------------------------------- dialogs

@@ -14,6 +14,21 @@
     });
     return 'GDW1:' + U.b64enc(JSON.stringify({ name: ul.name, settings: ul.settings, objects: objs }));
   };
+  /** Shorter, compressed code (GDW2) where the browser supports it; falls back to GDW1. */
+  GD.encodeLevelPacked = async function (ul) {
+    const plain = GD.encodeLevel(ul);
+    const packed = await U.pack(U.b64dec(plain.slice(5)));
+    return packed && packed.length + 5 < plain.length ? 'GDW2:' + packed : plain;
+  };
+  GD.decodeLevelAsync = async function (txt) {
+    txt = String(txt || '').trim();
+    if (!txt.startsWith('GDW2:')) return GD.decodeLevel(txt);
+    try {
+      return GD.decodeLevel(await U.unpack(txt.slice(5).replace(/\s+/g, '')));
+    } catch (e) {
+      return null;
+    }
+  };
   GD.decodeLevel = function (txt) {
     try {
       txt = String(txt || '').trim();

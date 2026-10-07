@@ -106,6 +106,33 @@
     return decodeURIComponent(escape(root.atob(b64)));
   };
 
+  // ---- compressed share codes (deflate + base64url); pack resolves to null where unsupported
+  const toB64url = (bytes) => {
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return root.btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  };
+  const fromB64url = (str) => {
+    const b = root.atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+    const out = new Uint8Array(b.length);
+    for (let i = 0; i < b.length; i++) out[i] = b.charCodeAt(i);
+    return out;
+  };
+  U.pack = async (str) => {
+    if (!root.CompressionStream || !root.Response || !root.Blob) return null;
+    try {
+      const s = new Blob([str]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+      return toB64url(new Uint8Array(await new Response(s).arrayBuffer()));
+    } catch (e) {
+      return null;
+    }
+  };
+  U.unpack = async (b64) => {
+    if (!root.DecompressionStream) throw new Error('compressed level codes are not supported by this browser');
+    const s = new Blob([fromB64url(b64)]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Response(s).text();
+  };
+
   U.fmtTime = (sec) => {
     sec = Math.max(0, Math.floor(sec));
     const m = Math.floor(sec / 60), s = sec % 60;
