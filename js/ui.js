@@ -57,7 +57,11 @@
   };
   function lockReq(mode, i) {
     if (FX_REQ[mode]) return FX_REQ[mode][i] || null;
-    if (mode === 'cube') return i < 8 ? null : CUBE_REQ[(i - 8) % CUBE_REQ.length];
+    if (mode === 'cube' && i >= 8 + CUBE_REQ.length) {
+      const code = Object.keys(GD.VAULT_CUBES).find((k) => GD.VAULT_CUBES[k] === i);
+      return { vault: code || '?' };
+    }
+    if (mode === 'cube') return i < 8 ? null : CUBE_REQ[i - 8];
     if (i < 2) return null;
     if (i === 2) return { level: MODE_LEVEL[mode] };
     return i % 2 ? { coins: (i - 2) * 5 } : { stars: (i - 2) * 12 };
@@ -68,6 +72,7 @@
     if (req.stars) return t.stars >= req.stars;
     if (req.coins) return t.coins >= req.coins;
     if (req.ach) return !!(app.save.achievements && app.save.achievements[req.ach]);
+    if (req.vault) return !!(app.save.vault && app.save.vault[req.vault]);
     const r = app.save.levels[req.level];
     return !!(r && r.done);
   }
@@ -75,11 +80,13 @@
     if (req.stars) return `${req.stars}★`;
     if (req.coins) return `${req.coins}<span class="lock-coin"></span>`;
     if (req.ach) return '🏆';
+    if (req.vault) return '🔑';
     return 'Lv ' + (GD.LEVELS.findIndex((l) => l.id === req.level) + 1);
   }
   function reqText(req) {
     if (req.stars) return `Collect ${req.stars} stars to unlock this icon`;
     if (req.coins) return `Collect ${req.coins} secret coins to unlock this icon`;
+    if (req.vault) return 'Find the secret code for this icon in the Vault';
     if (req.ach) {
       const a = GD.ACHIEVEMENTS.find((x) => x.id === req.ach);
       return `Get the achievement "${a ? a.name : req.ach}" to unlock this`;
@@ -106,6 +113,7 @@
       $('b-create').addEventListener('click', () => { this.click(); this.show('creator'); });
       $('b-settings').addEventListener('click', () => { this.click(); this.settings(); });
       $('b-stats').addEventListener('click', () => { this.click(); this.stats(); });
+      $('b-vault').addEventListener('click', () => { this.click(); this.vault(); });
       $('b-help').addEventListener('click', () => { this.click(); this.help(); });
       $('b-full').addEventListener('click', () => { this.click(); this.fullscreen(); });
       $('lv-prev').addEventListener('click', () => this.turn(-1));
@@ -652,6 +660,68 @@
       };
       $('st-music').addEventListener('input', vol);
       $('st-sfx').addEventListener('input', vol);
+    },
+
+    /** The Vault: secret codes unlock hidden icons (and more). */
+    vault() {
+      const app = this.app;
+      const need = 10;
+      if (app.totals().stars < need) {
+        this.dialog('The Vault', `<p class="vault-msg">🔒 The Vault is locked.</p><p>Come back when you have collected ${need} stars.</p>`, [{ label: 'OK' }], true);
+        return;
+      }
+      app.save.vault = app.save.vault || {};
+      const CODES = {
+        lenny: { msg: '( ͡° ͜ʖ ͡°)  ...fine, take it.', unlock: 'lenny' },
+        spooky: { msg: 'Boo! Something spooky crawls out of the dark...', unlock: 'spooky' },
+        royal: { msg: 'Kneel. A crown fit for a cube.', unlock: 'royal' },
+        glitch: { msg: 'Th-th-that w-wasn\'t s-supposed to h-happen...', unlock: 'glitch' },
+      };
+      const HINTS = [
+        'Speak the words and the Vault shall open...',
+        'Someone keeps smirking at me. ( ͡° ͜ʖ ͡°)',
+        'Something spooky lives down here.',
+        'Only royalty may pass.',
+        'I s-s-see a gl-gl-glitch...',
+        'Nope.', 'Try again.', 'Are you even trying?', 'That is not it.', 'Wrong!',
+      ];
+      const found = () => Object.keys(CODES).filter((k) => app.save.vault[k]).length;
+      let tries = 0;
+      this.dialog('The Vault', `<p class="vault-msg" id="vault-msg">${HINTS[0]}</p>
+        <input type="text" id="vault-in" maxlength="30" placeholder="Enter a code..." autocomplete="off" />
+        <p class="vault-found" id="vault-found">Secrets found: ${found()} / ${Object.keys(CODES).length}</p>`, [
+        { label: 'Enter', fn: () => {
+          const inp = $('vault-in');
+          const code = inp.value.trim().toLowerCase().replace(/\s+/g, ' ');
+          const msg = $('vault-msg');
+          const c = CODES[code];
+          if (c) {
+            if (app.save.vault[c.unlock]) msg.textContent = 'You already have that one.';
+            else {
+              app.save.vault[c.unlock] = true;
+              msg.textContent = c.msg;
+              GD.Audio.sfx('unlock');
+              this.toast('New icon unlocked in the Icon Kit!');
+              app.persist();
+            }
+          } else {
+            tries++;
+            msg.textContent = HINTS[(tries % (HINTS.length - 1)) + 1];
+            GD.Audio.sfx('back');
+          }
+          $('vault-found').textContent = `Secrets found: ${found()} / ${Object.keys(CODES).length}`;
+          inp.value = '';
+          inp.focus();
+          return false;
+        } },
+        { label: 'Close', cls: 'gray' },
+      ], true);
+      setTimeout(() => {
+        const inp = $('vault-in');
+        if (!inp) return;
+        inp.focus();
+        inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('d-btns').querySelector('button').click(); } });
+      }, 50);
     },
 
     stats() {

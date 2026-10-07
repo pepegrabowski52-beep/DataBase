@@ -98,6 +98,11 @@
     { id: 'twin', name: 'Double Trouble', desc: 'Complete Twin Peaks', test: (s) => lvlDone(s, 'twin') },
     { id: 'glass', name: 'Through the Looking Glass', desc: 'Complete Looking Glass', test: (s) => lvlDone(s, 'glass') },
     { id: 'speed', name: 'Speed Demon', desc: 'Complete Velocity', test: (s) => lvlDone(s, 'velocity') },
+    { id: 'clockwork', name: 'Like Clockwork', desc: 'Complete Clockwork', test: (s) => lvlDone(s, 'clockwork') },
+    { id: 'harddemon', name: 'Sweet Dreams', desc: 'Complete the Hard Demon Nightmare', test: (s) => lvlDone(s, 'nightmare') },
+    { id: 'insanedemon', name: 'Overclocked', desc: 'Complete the Insane Demon Overload', test: (s) => lvlDone(s, 'overload') },
+    { id: 'extremedemon', name: 'Beyond the Horizon', desc: 'Complete the Extreme Demon Event Horizon', test: (s) => lvlDone(s, 'horizon') },
+    { id: 'vault', name: 'Vault Hunter', desc: 'Find every secret code in the Vault', test: (s) => !!s.vault && ['lenny', 'spooky', 'royal', 'glitch'].every((k) => s.vault[k]) },
     { id: 'demon', name: 'Demon Slayer', desc: 'Complete Demon Gate', test: (s) => lvlDone(s, 'demon') },
     { id: 'stars10', name: 'Star Collector', desc: 'Collect 10 stars', test: (s, t) => t.stars >= 10 },
     { id: 'stars30', name: 'Star Hoarder', desc: 'Collect 30 stars', test: (s, t) => t.stars >= 30 },
@@ -219,7 +224,10 @@
     bindInput() {
       const JUMP = new Set(['Space', 'ArrowUp', 'KeyW', 'Enter', 'NumpadEnter']);
       root.addEventListener('keydown', (e) => {
-        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+          if (e.code === 'Escape' && GD.UI.dialogOpen()) GD.UI.closeDialog();
+          return;
+        }
         if (GD.UI.dialogOpen()) {
           if (e.code === 'Escape') GD.UI.closeDialog();
           return;

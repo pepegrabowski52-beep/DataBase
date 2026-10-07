@@ -77,7 +77,43 @@
     (g, a, b) => { base(g, a); C(g, 0, 0, 11, b, 1.5); C(g, 0, 0, 7, a, 1.3); C(g, 0, 0, 3, b, 1.2); },
     (g, a, b) => { base(g, a); P(g, [-12, -12, -4, -12, -12, -4], b, 1.2); P(g, [12, 12, 4, 12, 12, 4], b, 1.2); P(g, [12, -12, 12, -4, 4, -12], b, 1.2); P(g, [-12, 12, -12, 4, -4, 12], b, 1.2); R(g, -5, -5, 10, 10, b, 1.4); C(g, 0, 0, 2, K, 0); },
     (g, a, b) => { base(g, a); P(g, [-11, -4, -3, -10, -3, -4], b, 1.3); P(g, [11, -4, 3, -10, 3, -4], b, 1.3); g.beginPath(); g.moveTo(-9, 5); g.quadraticCurveTo(0, 13, 9, 5); g.lineTo(-9, 5); g.fillStyle = b; g.fill(); g.lineWidth = 1.4; g.strokeStyle = K; g.stroke(); },
+    // ---- vault icons (unlocked with secret codes)
+    // lenny
+    (g, a, b) => {
+      base(g, a);
+      g.lineWidth = 1.8; g.strokeStyle = K; g.lineCap = 'round';
+      g.beginPath(); g.arc(-6, -2, 3.5, Math.PI * 1.1, Math.PI * 1.9); g.stroke();
+      g.beginPath(); g.arc(6, -2, 3.5, Math.PI * 1.1, Math.PI * 1.9); g.stroke();
+      C(g, -6, -1, 1.6, K, 0); C(g, 6, -1, 1.6, K, 0);
+      g.beginPath(); g.moveTo(-1, 2); g.quadraticCurveTo(0, 5, 2, 4); g.stroke();
+      g.beginPath(); g.moveTo(-8, 7); g.quadraticCurveTo(0, 12, 8, 7); g.lineWidth = 2; g.strokeStyle = b; g.stroke();
+      g.lineWidth = 1; g.strokeStyle = K; g.stroke();
+    },
+    // skull
+    (g, a, b) => {
+      base(g, a);
+      P(g, [-10, 2, -10, -6, -6, -11, 6, -11, 10, -6, 10, 2, 6, 5, 6, 11, -6, 11, -6, 5], b, 1.5);
+      E(g, -4.5, -3, 3, 3.5, K, 0); E(g, 4.5, -3, 3, 3.5, K, 0); P(g, [0, 1, 1.8, 4, -1.8, 4], K, 0);
+      g.beginPath(); for (let i = -3; i <= 3; i += 3) { g.moveTo(i, 7); g.lineTo(i, 11); } g.lineWidth = 1.2; g.strokeStyle = K; g.stroke();
+    },
+    // crown
+    (g, a, b) => {
+      base(g, a);
+      P(g, [-11, 4, -11, -9, -5.5, -3, 0, -11, 5.5, -3, 11, -9, 11, 4], b, 1.5);
+      R(g, -11, 4, 22, 5, b, 1.5);
+      C(g, -5.5, 6.5, 1.5, a, 1); C(g, 0, 6.5, 1.5, a, 1); C(g, 5.5, 6.5, 1.5, a, 1);
+    },
+    // glitch
+    (g, a, b) => {
+      R(g, -15, -15, 30, 30, a, 0);
+      clipBox(g, () => {
+        const rows = [[-15, 4, 3], [-11, 3, -4], [-8, 5, 6], [-3, 3, -2], [0, 4, 5], [4, 3, -6], [7, 4, 2], [11, 4, -3]];
+        for (const [y, h, dx] of rows) { R(g, -15 + dx, y, 30, h, b, 0); R(g, -8 + dx * 1.5, y, 6, h, a, 0); }
+        R(g, -7, -5, 4, 4, K, 0); R(g, 3, -5, 4, 4, K, 0);
+      });
+    },
   ];
+  GD.VAULT_CUBES = { lenny: CUBES.length - 4, spooky: CUBES.length - 3, royal: CUBES.length - 2, glitch: CUBES.length - 1 };
 
   // ------------------------------------------------------------------ ships (mini cube drawn separately)
   const SHIPS = [

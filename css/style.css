@@ -404,3 +404,5 @@ input[type=range]::-moz-range-thumb { width: calc(var(--u) * 4.4); height: calc(
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
 ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+.vault-msg { font-size: 1.15em; color: #ffe680; text-shadow: var(--outline-thin); min-height: 2.6em; }
+.vault-found { opacity: 0.85; margin-top: 0.6em; }
