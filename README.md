@@ -107,6 +107,8 @@ js/audio.js         Synthesizer, Sequencer, Songs, Soundeffekte
 js/editor.js        Level-Editor
 js/ui.js, main.js   Menüs, Dialoge, Eingabe, Hauptschleife
 tools/solve.js      Solver zur Level-Prüfung (Node.js)
+tools/engine-tests.js  Regressionstests für Physik-Sonderfälle (Schrägen, Teleport, Dual, Dash)
+tools/bundle.js     baut das ganze Spiel als eine einzige HTML-Datei
 ```
 
 ### Level-Prüfung
@@ -115,6 +117,9 @@ tools/solve.js      Solver zur Level-Prüfung (Node.js)
 node tools/solve.js                 # alle Level
 node tools/solve.js polar -v        # ein Level, alle Klick-Zeitfenster anzeigen
 node tools/solve.js --file mein.gdlevel.json
+node tools/solve.js demon --modes      # zusätzlich Modus/Tempo/Korridor entlang der Lösung anzeigen
+node tools/engine-tests.js             # Physik-Regressionstests
+node tools/bundle.js GeometryDash.html # Spiel als eine Datei (zum Weitergeben / offline öffnen)
 node tools/solve.js --seg "..o.... ....... ^^^^^^.."   # ein einzelnes Muster testen (Zeilen durch Leerzeichen getrennt)
 ```
 
