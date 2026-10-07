@@ -549,7 +549,10 @@
       const body = $('d-body');
       body.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('change', () => {
         s[el.dataset.k] = el.checked;
-        this.app.renderer.lowDetail = !!s.lowDetail;
+        if (this.app.renderer.lowDetail !== !!s.lowDetail) {
+          this.app.renderer.lowDetail = !!s.lowDetail;
+          this.app.onResize();
+        }
         this.app.persist();
       }));
       const vol = () => {

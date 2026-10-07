@@ -531,7 +531,8 @@
     }
 
     resize(w, h) {
-      const dpr = Math.min(root.devicePixelRatio || 1, 2);
+      // low detail mode renders at CSS resolution (much cheaper on high-density phone screens)
+      const dpr = Math.min(root.devicePixelRatio || 1, this.lowDetail ? 1 : 2);
       const cw = w || root.innerWidth || 960, ch = h || root.innerHeight || 540;
       this.cv.width = Math.round(cw * dpr);
       this.cv.height = Math.round(ch * dpr);

@@ -126,6 +126,7 @@
       this.renderer = new GD.Renderer(this.cv);
       this.loadSave();
       this.renderer.lowDetail = !!this.save.settings.lowDetail;
+      if (this.renderer.lowDetail) this.renderer.resize();
       this.menuBg = new MenuBg(this);
       this.bindInput();
       root.addEventListener('resize', () => this.onResize());
@@ -183,7 +184,7 @@
     },
     resetSave() {
       this.save = defaultSave();
-      this.renderer.lowDetail = false;
+      if (this.renderer.lowDetail) { this.renderer.lowDetail = false; this.onResize(); }
       this.persist();
     },
     levelRecord(id) {
