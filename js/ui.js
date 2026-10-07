@@ -690,7 +690,7 @@
           <label>SFX</label><input type="range" min="0" max="100" value="${Math.round(s.sfx * 100)}" id="st-sfx">
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:14px 24px;margin-top:16px">
-          ${chk('showPct', 'Show Percentage')}${chk('showBar', 'Progress Bar')}${chk('autoCP', 'Auto Checkpoints')}${chk('showFps', 'Show FPS')}${chk('hitboxes', 'Show Hitboxes in Practice')}${chk('lowDetail', 'Low Detail Mode')}
+          ${chk('showPct', 'Show Percentage')}${chk('showBar', 'Progress Bar')}${chk('autoCP', 'Auto Checkpoints')}${chk('showFps', 'Show FPS')}${chk('hitboxes', 'Show Hitboxes in Practice')}${chk('fastReset', 'Fast Respawn')}${chk('lowDetail', 'Low Detail Mode')}
         </div>`;
       this.dialog('Settings', html, [
         { label: 'Reset Progress', cls: 'red', fn: () => {

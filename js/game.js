@@ -173,7 +173,7 @@
         }
       } else if (this.state === 'dead') {
         this.deadT += dt;
-        if (this.deadT >= 1.0) {
+        if (this.deadT >= (this.settings.fastReset ? 0.5 : 1.0)) {
           this.attempt++;
           this.startAttempt(false);
         }
