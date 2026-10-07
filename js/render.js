@@ -567,10 +567,17 @@
     }
     /** Apply the mirror transform for screen-space drawing (background, ground). */
     mirrorOn() {
-      if (this.m !== 1) this.ctx.setTransform(this.m, 0, 0, 1, (this.W / 2) * (1 - this.m), 0);
+      if (this.m === 1) return;
+      const m = Math.abs(this.m) < 0.04 ? (this.m < 0 ? -0.04 : 0.04) : this.m; // avoid a degenerate transform mid-flip
+      this.ctx.setTransform(m, 0, 0, 1, (this.W / 2) * (1 - m), 0);
     }
     mirrorOff() {
       if (this.m !== 1) this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+    /** Horizontal range (in mirrored local coordinates) that covers the whole screen. */
+    mirrorSpan() {
+      const k = Math.max(0.04, Math.abs(this.m));
+      return k >= 1 ? [0, this.W] : [this.W / 2 - this.W / 2 / k, this.W / 2 + this.W / 2 / k];
     }
     sy(y) { return this.H - (y - this.cam.y) * this.S; }
 
@@ -749,7 +756,9 @@
       const tw = Math.max(8, Math.round(t.T * this.S * 1.25));
       const ox = -Math.round(((cam.x * 0.12 + (layerShift || 0)) * this.S) % tw);
       const oy = Math.round(((cam.y + 90) * 0.06 * this.S) % tw);
-      for (let x = ox - tw; x < this.W; x += tw) {
+      const [xa, xb] = this.mirrorSpan();
+      // (while the flip squeezes the screen to a sliver, the plain colour is enough)
+      if (Math.abs(this.m) >= 0.15) for (let x = ox - tw - Math.ceil(Math.max(0, -xa) / tw) * tw; x < xb; x += tw) {
         for (let y = this.H - tw + oy; y > -tw; y -= tw) {
           ctx.drawImage(t.c, x, y, tw, tw);
         }
@@ -825,24 +834,29 @@
       const y0 = top ? Math.min(lineY, this.H) : Math.max(lineY, 0);
       ctx.save();
       this.mirrorOn();
+      // during the mirror flip animation the transform squeezes the screen: cover the full width anyway
+      const [xa, xb] = this.mirrorSpan();
       ctx.beginPath();
-      if (top) ctx.rect(0, 0, this.W, y0);
-      else ctx.rect(0, y0, this.W, this.H - y0);
+      if (top) ctx.rect(xa, 0, xb - xa, y0);
+      else ctx.rect(xa, y0, xb - xa, this.H - y0);
       ctx.clip();
       ctx.fillStyle = css(cols.g);
-      ctx.fillRect(0, 0, this.W, this.H);
+      ctx.fillRect(xa, 0, xb - xa, this.H);
       const ox = -Math.round((cam.x * this.S) % tw);
+      const x0 = ox - tw - Math.ceil(Math.max(0, -xa) / tw) * tw;
       const ly = Math.round(lineY);
-      if (top) {
-        for (let x = ox - tw; x < this.W; x += tw) for (let yy = ly - tw; yy > -tw; yy -= tw) ctx.drawImage(t.c, x, yy, tw, tw);
+      if (Math.abs(this.m) < 0.15) {
+        // squeezed to a sliver mid-flip: plain colour only
+      } else if (top) {
+        for (let x = x0; x < xb; x += tw) for (let yy = ly - tw; yy > -tw; yy -= tw) ctx.drawImage(t.c, x, yy, tw, tw);
       } else {
-        for (let x = ox - tw; x < this.W; x += tw) for (let yy = ly; yy < this.H; yy += tw) ctx.drawImage(t.c, x, yy, tw, tw);
+        for (let x = x0; x < xb; x += tw) for (let yy = ly; yy < this.H; yy += tw) ctx.drawImage(t.c, x, yy, tw, tw);
       }
       const sh = ctx.createLinearGradient(0, lineY, 0, lineY + (top ? -1 : 1) * 40 * this.S);
       sh.addColorStop(0, 'rgba(0,0,0,0.35)');
       sh.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = sh;
-      ctx.fillRect(0, top ? lineY - 40 * this.S : lineY, this.W, 40 * this.S);
+      ctx.fillRect(xa, top ? lineY - 40 * this.S : lineY, xb - xa, 40 * this.S);
       ctx.restore();
       // line with faded ends
       const lc = cols.line;
