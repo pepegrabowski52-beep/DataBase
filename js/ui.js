@@ -118,14 +118,15 @@
             $('tapstart').classList.remove('hidden');
             const start = (e) => {
               if (e && e.type === 'keydown' && e.repeat) return;
-              root.removeEventListener('pointerdown', start, true);
+              if (e) { e.preventDefault(); e.stopPropagation(); }
+              root.removeEventListener('click', start, true);
               root.removeEventListener('keydown', start, true);
               GD.Audio.init();
               GD.Audio.setVolumes(this.app.save.settings.music, this.app.save.settings.sfx);
-              this.show('menu');
-              this.app.menuMusic();
+              // show the menu after this click has finished so it cannot fall through onto a button
+              setTimeout(() => { this.show('menu'); this.app.menuMusic(); }, 30);
             };
-            root.addEventListener('pointerdown', start, true);
+            root.addEventListener('click', start, true);
             root.addEventListener('keydown', start, true);
           };
           if (document.fonts && document.fonts.ready) document.fonts.ready.then(go, go);

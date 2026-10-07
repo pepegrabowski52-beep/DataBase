@@ -480,7 +480,9 @@
 
     setZoom(z) {
       this.zoom = z;
-      this.S = (this.H / 320) * z;
+      // fit 320 units vertically, but never show less than ~15 blocks horizontally (portrait phones)
+      this.hs = Math.min(this.H / 320, this.W / 440);
+      this.S = this.hs * z;
       this.VW = this.W / this.S;
       this.VH = this.H / this.S;
       if (this.S !== this.lastS) {
@@ -490,6 +492,9 @@
         this.gTile = null;
       }
     }
+
+    /** Lowest camera y for ground-based modes (more ground visible on tall screens). */
+    groundCam() { return this.VH > 400 ? -this.VH * 0.3 : -90; }
 
     sx(x) { return (x - this.cam.x) * this.S; }
     sy(y) { return this.H - (y - this.cam.y) * this.S; }
@@ -947,7 +952,7 @@
 
     progressBar(pct, showBar, showPct) {
       const ctx = this.ctx;
-      const s = this.H / 320;
+      const s = this.hs;
       const bw = Math.min(this.W * 0.42, 260 * s);
       const bh = 8 * s;
       const x = (this.W - bw) / 2, y = 7 * s;

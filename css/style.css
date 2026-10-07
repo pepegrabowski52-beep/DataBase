@@ -1,7 +1,7 @@
 /* Geometry Dash Web – UI styles */
 :root {
   --font: 'Lilita One', 'Arial Black', Impact, sans-serif;
-  --u: min(1vh, 1.78vw);
+  --u: min(1vh, 0.95vw);
   --green1: #b2f45c;
   --green2: #3eb81e;
   --green-dark: #1a4a0c;
@@ -390,7 +390,8 @@ input[type=range]::-moz-range-thumb { width: calc(var(--u) * 4.4); height: calc(
 /* --------------------------------------------------------------- misc */
 .rotate-hint { display: none; }
 @media (orientation: portrait) and (max-width: 700px) {
-  .rotate-hint { display: block; position: absolute; left: 0; right: 0; top: 0; background: rgba(0,0,0,0.7); text-align: center; padding: 8px; font-size: 14px; text-shadow: var(--outline-thin); z-index: 100; pointer-events: none; }
+  .rotate-hint { display: block; position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); text-align: center; padding: 8px; font-size: 14px; text-shadow: var(--outline-thin); z-index: 100; pointer-events: none; animation: hintfade 6s forwards; }
+  @keyframes hintfade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
 }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }

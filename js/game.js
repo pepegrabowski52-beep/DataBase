@@ -85,7 +85,7 @@
       this.vis.floor = w.bnd.floor;
       this.vis.ceil = w.bnd.ceil;
       if (w.bnd.ceil != null) this.cam.y = (w.bnd.floor + w.bnd.ceil) / 2 - this.r.VH / 2;
-      else this.cam.y = Math.max(-90, p.y - 140);
+      else this.cam.y = Math.max(this.r.groundCam(), p.y - 140);
     }
 
     camOffset() {
@@ -203,10 +203,11 @@
         this.cam.y += (ty - this.cam.y) * k;
       } else if (this.state === 'play') {
         let ty = this.cam.y;
-        const top = this.cam.y + r.VH - 110, bot = this.cam.y + 120;
-        if (p.y > top) ty = p.y - (r.VH - 110);
-        else if (p.y < bot) ty = p.y - 120;
-        ty = Math.max(-90, ty);
+        const mTop = Math.max(110, r.VH * 0.3), mBot = Math.max(120, r.VH * 0.36);
+        const top = this.cam.y + r.VH - mTop, bot = this.cam.y + mBot;
+        if (p.y > top) ty = p.y - (r.VH - mTop);
+        else if (p.y < bot) ty = p.y - mBot;
+        ty = Math.max(r.groundCam(), ty);
         this.cam.y += (ty - this.cam.y) * Math.min(1, dt * 7);
       }
       const ceilT = w.bnd.ceil != null ? w.bnd.ceil : this.cam.y + r.VH + 80;
@@ -435,11 +436,11 @@
       if (this.state === 'complete') {
         const k = U.clamp(this.doneT / 0.5, 0, 1);
         const sc = U.ease.elastic(k);
-        r.text(this.practice ? 'PRACTICE COMPLETE!' : 'LEVEL COMPLETE!', r.W / 2, r.H * 0.38, (r.H / 320) * 34 * sc, { gold: true });
+        r.text(this.practice ? 'PRACTICE COMPLETE!' : 'LEVEL COMPLETE!', r.W / 2, r.H * 0.38, r.hs * 34 * sc, { gold: true });
       }
       if (this.newBest != null && this.time - this.newBestT < 1.2 && this.state === 'dead') {
-        r.text(this.newBest + '%', r.W / 2, r.H * 0.42, (r.H / 320) * 34, { gold: true, alpha: 1 - (this.time - this.newBestT) / 1.4 });
-        r.text('NEW BEST!', r.W / 2, r.H * 0.42 - (r.H / 320) * 30, (r.H / 320) * 18, { alpha: 1 - (this.time - this.newBestT) / 1.4 });
+        r.text(this.newBest + '%', r.W / 2, r.H * 0.42, r.hs * 34, { gold: true, alpha: 1 - (this.time - this.newBestT) / 1.4 });
+        r.text('NEW BEST!', r.W / 2, r.H * 0.42 - r.hs * 30, r.hs * 18, { alpha: 1 - (this.time - this.newBestT) / 1.4 });
       }
       r.progressBar(w.progress(), this.settings.showBar, this.settings.showPct);
       if (this.settings.showFps) r.text(this.fps + ' FPS', 8 * r.dpr, r.H - 12 * r.dpr, 12 * r.dpr, { align: 'left' });

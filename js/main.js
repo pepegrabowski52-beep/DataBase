@@ -60,7 +60,7 @@
       }
       const r = this.app.renderer;
       r.cam.x = p.x - Math.min(r.VW * 0.3, 220);
-      r.cam.y = -90;
+      r.cam.y = r.groundCam();
       r.updateParticles(dt);
       if (p.onGround && (p.mode === 'cube' || p.mode === 'robot' || p.mode === 'ball' || p.mode === 'spider') && Math.random() < 0.5) {
         r.spawn(p.x - 12, p.y - 13 * p.gr, -80, 30 * p.gr, 0.3, 3, this.app.save.icons.c1);
