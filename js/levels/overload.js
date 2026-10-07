@@ -141,7 +141,7 @@
     return out;
   };
   const dual1 = vsym(put(chan(1, 2, 'o4 f20 D1 U1 U1 D1 D1 U1 f9 U1 D1 D1 U1 U1 D1 f13 D1 U1 U1 D1 f4 o2', 5),
-    [...teeth(7, 23, 1, 2, true), ...teeth(34, 40, 1, 3, false), ...teeth(48, 60, 1, 2, true)]));
+    [...teeth(7, 23, 1, 2, true), ...teeth(34, 40, 1, 3, false), ...teeth(48, 57, 1, 2, true)]));
 
   // ---------------------------------------------------------------- [8] wave 4x finale
   const w4 = walled(GD.slopeWave({ len: 36, seed: 1804, width: 2, start: 3 }));
@@ -152,17 +152,18 @@
     const n = width(main);
     const up = n - 1 - 2 - (+path(F, 2).slice(1) || 1) - 17;
     const lane = chan(F, 2, `o2 ${path(F, 2)} f${3 + up} u3 f5 d3 f${17 - 3 - up - 11} o1`);
-    return put(merge(main, lane), [[2 + (+path(F, 2).slice(1) || 1) + 3 + up + 5, 6, '$']]);
+    const c0 = 2 + (+path(F, 2).slice(1) || 1) + 3 + up; // first column of the climb
+    return put(merge(main, lane), [[c0 + 5, 6, '$'], [c0 + 4, 3, '#'], [c0 + 6, 2, '#'], [c0 + 8, 3, '#']]);
   })();
   // teleport wall: the channel ends in a blue portal, the wave comes out at the roof in a row of teeth
   const tpB = (() => {
     const s = chan(2, 2, 'o2 u2 f5 x4 j7 f22 d5 f2');
     const K = 2 + 2 + 5 - 1;
     const cells = [[K, 5, 'K'], [K + 6, 8, 'W']];
-    for (let c = K + 9, top = true; c < K + 26; c += 3, top = !top) cells.push([c, top ? 8 : 7, '#']);
+    for (let c = K + 9, top = true; c < K + 26; c += 2, top = !top) cells.push([c, top ? 8 : 7, '#']);
     return put(s, cells);
   })();
-  const w5 = walled(GD.slopeWave({ len: 34, seed: 1805, width: 2, start: endF(tpB) }));
+  const w5 = walled(GD.waveRun({ len: 36, seed: 1782, width: 2, open: 3, fill: true, start: endF(tpB) }));
 
   GD.addLevel({
     id: 'overload', name: 'Overload', diff: 'insanedemon', stars: 14, color: '#00d0ff', song: 'overload',
@@ -184,27 +185,27 @@
         shift('#001c28', '#000a10'),
         spd('3'),
       ],
-      // [1] cube 3x: pillar climb, orb chain, a teleport onto a high rail (coin 1: yellow orb above the rail)
+      // [1] cube 3x: pillar climb, pink orb chain, a teleport onto a high rail (coin 1: yellow orb above the rail)
       [
         6, '^^^', 9,
         `
-        ...............###..........
-        ..........###..###..###.....
-        ..^^^^....###^^###^^###^^^^.
+        .................###.............
+        ..........###....###....###......
+        ..^^^^....###^^^^###^^^^###^^^^...
         `,
         6,
         `
-        ...o.....o.....o.......
-        .......................
-        ^^^^^^^^^^^^^^^^^^^^...
+        ....p....p....p....p.....
+        ..^^^^^^^^^^^^^^^^^^^^...
         `,
         6,
         `
-        .......................$...........
         ...................................
-        ..........W.........o..............
-        ..................^....^...........
-        ........###################........
+        ......................$............
+        ...................................
+        ..........W.......o................
+        ...............^.......^...........
+        ........####################.......
         ..K................................
         .....^^^^^^^^^^^^^^^^^^^^^^^^^^^...
         `,
@@ -226,7 +227,7 @@
       [
         shift('#00102e', '#000616', '#40a0ff'),
         stack('S'),
-        GD.gates({ len: 50, seed: 1792, gap: 4, every: 8, maxStep: 2 }),
+        GD.gates({ len: 52, seed: 1792, gap: 4, every: 8, maxStep: 2, lead: 8 }),
         5,
         // the only way through the wall is the blue portal, it throws you to the bottom
         `
@@ -243,7 +244,10 @@
         `,
         GD.gates({ len: 40, seed: 1793, gap: 4, every: 8, maxStep: 2 }),
         sstack('3'),
-        GD.gates({ len: 50, seed: 1794, gap: 3, every: 7, maxStep: 2 }),
+        GD.gates({ len: 44, seed: 1794, gap: 3, every: 7, maxStep: 2 }),
+        // circuit trace: a stepped 3-high tunnel with sparks at the corners
+        put(chan(3, 3, 'o3 f4 U1 f2 U1 f2 U1 f3 D1 f2 D1 f2 D1 f2 D1 f3 U1 f2 U1 f3 D1 f2 D1 f4 o2'),
+          [[5, 3, '^'], [15, 8, 'v'], [21, 6, 'v'], [28, 2, '^'], [35, 6, 'v'], [42, 2, '^']]),
       ],
       // [4] mini wave 3x, then 4x
       [
@@ -255,16 +259,21 @@
         stack('M'),
         exit('C'),
       ],
-      // [5] cube 4x, then 3x: spike runs, a teleport drop off the high road
+      // [5] cube 4x, then 3x: block runs and a pillar staircase, a teleport drop off the high road
       [
         shift('#001c28', '#000a10'),
         8, '^^^', 12,
         `
-        ...........##.........
-        ......##...##...##....
-        ..^^..##^^^##^^^##^^^.
+        ...##.......##.......##.......
+        ...##^^^^^^^##^^^^^^^##^^^^...
         `,
-        10, '^^^^', 10,
+        8,
+        `
+        .........................................
+        ..........#.......#.......#..............
+        .....#....#...#...#...#...#....#.........
+        ..^^^#^^^^#^^^#^^^#^^^#^^^#^^^^#^^^......
+        `,
         spd('3'),
         8,
         `
@@ -301,7 +310,7 @@
       // [7] dual wave 3x
       [
         shift('#1c0a30', '#0a0414', '#c080ff'),
-        sstack('3'), stack('V'), stack('Y'),
+        sstack('3'), stack('N'), stack('V'), stack('Y'),
         dual1,
         stack('I'),
       ],
@@ -319,21 +328,25 @@
       // [9] cube 4x sprint, then 3x
       [
         shift('#001c28', '#000a10'),
-        8, '^^^', 12, '^^^', 12,
-        `
-        ...........##.........
-        ......##...##...##....
-        ..^^..##^^^##^^^##^^^.
-        `,
+        8, '^^^', 12, '^^^', 10,
+        '..^^^^......###^^^^^^^###......',
+        10, '^^^^', 6,
         8,
         spd('3'),
         8,
         `
-        ...o.....o.....o.......
-        .......................
-        ^^^^^^^^^^^^^^^^^^^^...
+        .....o.....p.....o.......
+        .........................
+        ..^^^^^^^^^^^^^^^^^^^....
         `,
-        10, '^^^', 10,
+        8,
+        `
+        .........................
+        .....r...................
+        .........................
+        ..^^^^^^^^^^^............
+        `,
+        8, '^^^', 10,
       ],
       // [10] outro (cube 1x)
       [
