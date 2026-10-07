@@ -241,7 +241,13 @@
     tick() {
       const cur = this.cur;
       if (!cur || !this.ctx) return;
-      const ahead = this.ctx.currentTime + 0.14;
+      const now = this.ctx.currentTime;
+      if (cur.next < now - 0.05) {
+        // timers were throttled (background tab): skip missed steps instead of playing them all at once
+        cur.step = Math.ceil((now - cur.start) / cur.spb);
+        cur.next = cur.start + cur.step * cur.spb;
+      }
+      const ahead = now + 0.14;
       while (cur.next < ahead) {
         this.schedule(cur, cur.step, Math.max(cur.next, this.ctx.currentTime));
         cur.step++;

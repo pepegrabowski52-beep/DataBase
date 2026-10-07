@@ -128,7 +128,8 @@
     restart() {
       this.checkpoints = [];
       this.attempt++;
-      this.saveAttempt();
+      // a death was already counted as an attempt
+      if (this.state !== 'dead') this.saveAttempt();
       this.startAttempt(false);
       if (this.practice) this.playMusic();
     }
@@ -534,17 +535,30 @@
       const r = this.r, w = this.world, p = w.p, ctx = r.ctx;
       const hw = w.hw();
       ctx.lineWidth = 1.5;
+      // world rectangle -> screen rectangle (works when the view is mirrored)
+      const box = (x0, y0, x1, y1) => {
+        const a = r.sx(x0), b = r.sx(x1);
+        ctx.strokeRect(Math.min(a, b), r.sy(y1), Math.abs(b - a), (y1 - y0) * r.S);
+      };
       ctx.strokeStyle = '#ff3030';
-      ctx.strokeRect(r.sx(this.rx - hw), r.sy(this.ry + hw), hw * 2 * r.S, hw * 2 * r.S);
+      box(this.rx - hw, this.ry - hw, this.rx + hw, this.ry + hw);
       ctx.strokeStyle = '#3080ff';
       const ih = hw * 0.3;
-      ctx.strokeRect(r.sx(this.rx - ih), r.sy(this.ry + ih), ih * 2 * r.S, ih * 2 * r.S);
+      box(this.rx - ih, this.ry - ih, this.rx + ih, this.ry + ih);
       const [a, b] = r.visibleRange(w.rlist, r.cam, 60);
       for (let i = a; i < b; i++) {
         const o = w.rlist[i];
         if (!o.lh) continue;
         ctx.strokeStyle = o.kind === 'hazard' ? '#ff3030' : o.kind === 'solid' ? '#3080ff' : '#30ff60';
-        if (o.lh.k === 'r') ctx.strokeRect(r.sx(o.x0), r.sy(o.y1), (o.x1 - o.x0) * r.S, (o.y1 - o.y0) * r.S);
+        if (o.sl) {
+          ctx.beginPath();
+          const pts = o.sBelow
+            ? (o.sRise ? [[o.x0, o.y0], [o.x1, o.y0], [o.x1, o.y1]] : [[o.x0, o.y0], [o.x1, o.y0], [o.x0, o.y1]])
+            : (o.sRise ? [[o.x0, o.y0], [o.x0, o.y1], [o.x1, o.y1]] : [[o.x0, o.y1], [o.x1, o.y1], [o.x1, o.y0]]);
+          pts.forEach(([x, y], k) => (k ? ctx.lineTo(r.sx(x), r.sy(y)) : ctx.moveTo(r.sx(x), r.sy(y))));
+          ctx.closePath();
+          ctx.stroke();
+        } else if (o.lh.k === 'r') box(o.x0, o.y0, o.x1, o.y1);
         else { ctx.beginPath(); ctx.arc(r.sx(o.cx), r.sy(o.cy), o.cr * r.S, 0, Math.PI * 2); ctx.stroke(); }
       }
     }
