@@ -801,8 +801,23 @@
         ${row('Completed Levels', st.completed)}${row('Stars', t.stars + ' / ' + t.maxStars)}${row('Secret Coins', t.coins + ' / ' + t.maxCoins)}
         ${row('Created Levels', this.app.userLevels.length)}</div>`, [
         { label: 'Achievements', cls: 'blue', fn: () => { setTimeout(() => this.achievements(), 10); } },
+        { label: 'Levels', cls: 'pink', fn: () => { setTimeout(() => this.levelStats(), 10); } },
         { label: 'OK' },
       ]);
+    },
+
+    /** Per-level records: best %, practice %, attempts, coins. */
+    levelStats() {
+      const lv = this.app.save.levels;
+      const rows = this.app.levelList().map((def) => {
+        const r = lv[def.id] || {};
+        const coins = [0, 1, 2].map((i) => `<i class="coin-ic ${r.coins && r.coins[i] ? '' : 'off'}"></i>`).join('');
+        return `<tr class="${r.done ? 'done' : ''}"><td>${esc(def.name)}</td><td>${DIFF_NAMES[def.diff] || ''}</td>` +
+          `<td>${r.best || 0}%</td><td>${r.pbest || 0}%</td><td>${r.att || 0}</td><td class="ls-coins">${coins}</td></tr>`;
+      }).join('');
+      this.dialog('Level Stats', `<div class="ls-wrap"><table class="ls-table"><thead><tr><th>Level</th><th>Difficulty</th><th>Best</th><th>Practice</th><th>Attempts</th><th>Coins</th></tr></thead><tbody>${rows}</tbody></table></div>`, [
+        { label: 'OK' },
+      ], true);
     },
 
     achievements() {

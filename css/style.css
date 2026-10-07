@@ -426,3 +426,11 @@ input[type=range]::-moz-range-thumb { width: calc(var(--u) * 4.4); height: calc(
 .gt-reward canvas { width: calc(var(--u) * 8); height: calc(var(--u) * 8); }
 .gt-reward canvas.locked { filter: brightness(0.25) grayscale(1); }
 @media (max-aspect-ratio: 1/1) { .gt-list { grid-template-columns: 1fr; } }
+
+/* level stats */
+.ls-wrap { max-height: 60vh; overflow-y: auto; }
+.ls-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+.ls-table th { text-align: left; color: #ffe680; text-shadow: var(--outline-thin); padding: 0.2em 0.4em; position: sticky; top: 0; background: #8a4a1c; }
+.ls-table td { padding: 0.25em 0.4em; border-top: 1px solid rgba(0,0,0,0.25); white-space: nowrap; }
+.ls-table tr.done td:first-child::after { content: ' ✔'; color: #7dff5a; }
+.ls-coins .coin-ic { display: inline-block; width: 0.9em; height: 0.9em; margin-right: 0.15em; vertical-align: -0.1em; }
