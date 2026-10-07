@@ -454,7 +454,9 @@
       p.tp = null;
       let hw = this.hw();
       if (p.buffer) this.orbs(hw);
-      this.move(hold, dt, hw);
+      if (p.dash && !hold) p.dash = 0; // a dash lasts while the button is held
+      if (p.dash) p.vy = p.dvy;
+      else this.move(hold, dt, hw);
 
       const speed = SPEEDS[p.spd];
       p.x += speed * dt;
@@ -464,6 +466,7 @@
       if (p.mode === 'wave') this.collideWave(hw, dt);
       else this.collide(hw);
       if (p.dead) return;
+      if (p.dash && p.dvy && (p.onGround || p.onCeil)) p.dash = 0; // ran into a floor / ceiling
       this.hazards(hw);
       if (p.dead) return;
       this.interact(hw);
@@ -791,6 +794,18 @@
         case 'orbB': p.gr = -p.gr; p.vy = -p.gr * 300 * m; break;
         case 'orbG': p.gr = -p.gr; p.vy = -p.gr * 670.8 * m; break;
         case 'orbK': p.vy = -p.gr * 900 * Math.max(m, 0.5); break;
+        case 'orbM':
+        case 'orbD': {
+          if (o.t === 'orbM') p.gr = -p.gr;
+          // direction from the orb's rotation (0 = straight ahead, clockwise on screen), at most 70° up or down
+          let r = (((o.r || 0) % 360) + 360) % 360;
+          if (r > 180) r -= 360;
+          r = r < -70 ? -70 : r > 70 ? 70 : r;
+          p.dash = 1;
+          p.dvy = -Math.tan((r * Math.PI) / 180) * SPEEDS[p.spd];
+          p.vy = p.dvy;
+          break;
+        }
       }
       p.rbOn = false;
       p.onGround = false;
@@ -839,6 +854,7 @@
     setMode(pl, mode) {
       if (pl.mode !== mode) {
         pl.mode = mode;
+        pl.dash = 0;
         pl.vy *= 0.5;
         pl.rbOn = false;
         pl.rot = 0;
@@ -952,6 +968,7 @@
 
     visual(dt, speed) {
       const p = this.p;
+      if (p.dash && (p.mode === 'cube' || p.mode === 'robot' || p.mode === 'spider')) { p.rot += 1080 * dt; return; }
       switch (p.mode) {
         case 'cube':
           if (!p.onGround) p.rot += p.gr * (p.mini ? 520 : 462) * dt;

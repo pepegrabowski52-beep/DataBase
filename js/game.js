@@ -417,6 +417,11 @@
       if (w.p2) this.emitFor(w.p2, this.trail2, emit, ic.c2);
       else if (this.trail2.length) this.trail2.length = 0;
       const p = w.p;
+      if (p.dash) {
+        // dash orbs: a long streak and sparks while the dash lasts
+        this.streakT = Math.max(this.streakT, 0.06);
+        if (emit) this.r.spawn(p.x - 10, p.y + (Math.random() - 0.5) * 18, -140, (Math.random() - 0.5) * 50, 0.3, 3 + Math.random() * 3, '#ffffff', { shape: 'ci', add: true, drag: 2 });
+      }
       if (this.streakT > 0) {
         this.streakT -= dt;
         this.streak.push([p.x, p.y, this.time]);

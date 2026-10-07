@@ -266,6 +266,15 @@
       g.beginPath(); g.arc(-3.5, -3.5, 3, 0, Math.PI * 2);
       g.fillStyle = 'rgba(255,255,255,0.55)'; g.fill();
     },
+    dasharrow(g) {
+      // two chevrons pointing along +x (the dash direction)
+      g.lineJoin = 'round';
+      for (const x of [-4, 4]) {
+        g.beginPath(); g.moveTo(x - 4, -6); g.lineTo(x + 3, 0); g.lineTo(x - 4, 6);
+        g.lineWidth = 4.2; g.strokeStyle = 'rgba(0,0,0,0.55)'; g.stroke();
+        g.lineWidth = 2.4; g.strokeStyle = '#fff'; g.stroke();
+      }
+    },
     orbring(g) {
       g.lineWidth = 1.8;
       g.strokeStyle = 'rgba(255,255,255,0.75)';
@@ -907,6 +916,7 @@
           this.blit(sp, x, y, 0, k * s, k * s, alpha);
           const ring = this.sprite('orbring', 42, ART.orbring);
           this.blit(ring, x, y, time * 120, s, s, alpha * (used ? 0.4 : 0.85));
+          if (d.dash) this.blit(this.sprite('dasharrow', 30, ART.dasharrow), x, y, o.r || 0, s, s, alpha);
           break;
         }
         case 'coin': {

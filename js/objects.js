@@ -41,6 +41,9 @@
   def('orbB', { kind: 'orb', cat: 'orb', name: 'Blue Orb', hb: orbHB, art: 'orb', c: '#38c8ff', col: 'none' });
   def('orbG', { kind: 'orb', cat: 'orb', name: 'Green Orb', hb: orbHB, art: 'orb', c: '#3dff5a', col: 'none' });
   def('orbK', { kind: 'orb', cat: 'orb', name: 'Black Orb', hb: orbHB, art: 'orb', c: '#202020', col: 'none' });
+  // dash orbs: while the button is held the player flies straight in the arrow's direction (rotate the orb to aim it)
+  def('orbD', { kind: 'orb', cat: 'orb', name: 'Dash Orb', hb: orbHB, art: 'orb', c: '#2ee86a', col: 'none', dash: true });
+  def('orbM', { kind: 'orb', cat: 'orb', name: 'Gravity Dash Orb', hb: orbHB, art: 'orb', c: '#e02ad4', col: 'none', dash: true });
 
   // ---------------------------------------------------------------- pads
   const padHB = { x: 0, y: -13, w: 25, h: 4 };

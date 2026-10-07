@@ -12,6 +12,7 @@
  *   (- long (22.5°) slope up   -) long slope down   (two cells: the '-' is part of the slope)
  *   ^ spike  v ceiling spike  < > side spikes  , small spike  ` small ceiling spike  ; ground spikes  : ceiling ground spikes
  *   o p r b g k        yellow / pink / red / blue / green / black orb
+ *   d e f              dash orb: straight ahead / 45° up / 45° down    q  gravity dash orb (straight ahead)
  *   O P R B            yellow / pink / red / blue pad      Q E F  yellow / blue / pink pad on a ceiling
  *   C S A U V T D J    cube / ship / ball / ufo / wave / robot / spider / swing portal
  *   G N                gravity flip (upside down) / normal gravity portal
@@ -34,6 +35,7 @@
     '^': { t: 'spike' }, v: { t: 'spike', r: 180 }, '<': { t: 'spike', r: 270 }, '>': { t: 'spike', r: 90 },
     ',': { t: 'spikeS' }, '`': { t: 'spikeS', r: 180 }, ';': { t: 'spikeT' }, ':': { t: 'spikeT', r: 180 },
     o: { t: 'orbY' }, p: { t: 'orbP' }, r: { t: 'orbR' }, b: { t: 'orbB' }, g: { t: 'orbG' }, k: { t: 'orbK' },
+    d: { t: 'orbD' }, e: { t: 'orbD', r: 315 }, f: { t: 'orbD', r: 45 }, q: { t: 'orbM' },
     O: { t: 'padY' }, P: { t: 'padP' }, R: { t: 'padR' }, B: { t: 'padB' },
     Q: { t: 'padY', r: 180 }, E: { t: 'padB', r: 180 }, F: { t: 'padP', r: 180 },
     C: { t: 'pCube' }, S: { t: 'pShip' }, A: { t: 'pBall' }, U: { t: 'pUfo' }, V: { t: 'pWave' },
