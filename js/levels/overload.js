@@ -40,9 +40,8 @@
     const A = toG(a), B = toG(b);
     return toS(A.map((row, r) => row.map((x, c) => {
       const y = B[r][c];
-      if (x === '#') return y;
-      if (y === '#') return x;
-      return x === '.' ? y : x;
+      if (x === '.' || y === '.') return '.';
+      return x === '#' ? y : x;
     })));
   };
   const width = (s) => toG(s)[0].length;
@@ -101,6 +100,20 @@
     return put(s, cells);
   };
 
+  // speed portals are only 44 units high: a column of them every 37.5 units covers the whole corridor
+  const sstack = (ch, rows) => {
+    const H = (rows || 10) * 30, n = Math.ceil(H / 40), out = [];
+    for (let i = 0; i < n; i++) out.push({ t: GD.ASCII[ch].t, at: 0, y: ((i + 0.5) * H) / n / 30 - 0.5 });
+    out.push(1);
+    return out;
+  };
+  // mirror a lower half to the top for dual sections (like GD.sym, but slopes are flipped too)
+  const FLIP = { '^': 'v', v: '^', '/': ']', ']': '/', '&': '[', '[': '&' };
+  const vsym = (lower) => {
+    const L = lower.split('\n');
+    return L.slice().reverse().map((l) => l.split('').map((c) => FLIP[c] || c).join('')).concat(L).join('\n');
+  };
+
   // ---------------------------------------------------------------- [2] wave 3x pieces
   const w1 = walled(GD.slopeWave({ len: 46, seed: 1772, width: 2, start: 1, minSeg: 2, maxSeg: 4 }));
   // teleport trap: the channel climbs to the roof, the blue portal drops the wave into a toothed tunnel below
@@ -119,7 +132,37 @@
   })();
   const w2 = walled(GD.waveRun({ len: 44, seed: 1773, width: 2, open: 3, fill: true, start: 4 }));
   const z1 = zapper(endF(w2), 30, 2, 3);
-  const w3 = walled(GD.slopeWave({ len: 50, seed: 1775, width: 2, start: endF(z1) }));
+  const w3 = walled(GD.slopeWave({ len: 44, seed: 1775, width: 2, start: endF(z1) }));
+
+  // ---------------------------------------------------------------- [7] dual wave (lower half, mirrored by vsym)
+  const teeth = (c0, c1, F, pitch, top) => {
+    const out = [];
+    for (let c = c0; c < c1; c += pitch, top = !top) out.push([c, top ? F + 1 : F, '#']);
+    return out;
+  };
+  const dual1 = vsym(put(chan(1, 2, 'o4 f20 D1 U1 U1 D1 D1 U1 f9 U1 D1 D1 U1 U1 D1 f13 D1 U1 U1 D1 f4 o2', 5),
+    [...teeth(7, 23, 1, 2, true), ...teeth(34, 40, 1, 3, false), ...teeth(48, 60, 1, 2, true)]));
+
+  // ---------------------------------------------------------------- [8] wave 4x finale
+  const w4 = walled(GD.slopeWave({ len: 36, seed: 1804, width: 2, start: 3 }));
+  // fork: the lower lane is the easy way, the upper lane hides coin 2
+  const fork = (() => {
+    const F = endF(w4);
+    const main = chan(F, 2, `o2 ${path(F, 2)} f17 o1`);
+    const n = width(main);
+    const up = n - 1 - 2 - (+path(F, 2).slice(1) || 1) - 17;
+    const lane = chan(F, 2, `o2 ${path(F, 2)} f${3 + up} u3 f5 d3 f${17 - 3 - up - 11} o1`);
+    return put(merge(main, lane), [[2 + (+path(F, 2).slice(1) || 1) + 3 + up + 5, 6, '$']]);
+  })();
+  // teleport wall: the channel ends in a blue portal, the wave comes out at the roof in a row of teeth
+  const tpB = (() => {
+    const s = chan(2, 2, 'o2 u2 f5 x4 j7 f22 d5 f2');
+    const K = 2 + 2 + 5 - 1;
+    const cells = [[K, 5, 'K'], [K + 6, 8, 'W']];
+    for (let c = K + 9, top = true; c < K + 26; c += 3, top = !top) cells.push([c, top ? 8 : 7, '#']);
+    return put(s, cells);
+  })();
+  const w5 = walled(GD.slopeWave({ len: 34, seed: 1805, width: 2, start: endF(tpB) }));
 
   GD.addLevel({
     id: 'overload', name: 'Overload', diff: 'insanedemon', stars: 14, color: '#00d0ff', song: 'overload',
@@ -157,9 +200,7 @@
         `,
         6,
         `
-        ......................$............
-        ...................................
-        ...................................
+        .......................$...........
         ...................................
         ..........W.........o..............
         ..................^....^...........
@@ -177,17 +218,17 @@
         tpA,
         w2,
         shift('#002a3a', '#000e16', '#00f0ff'),
-        stack('4'),
+        sstack('4'),
         z1,
         w3,
       ],
-      // [3] ship 4x: gates, a wall of teleports, then 3x gap-3 gates
+      // [3] ship 4x: gates, a wall of electricity with a teleport, then 3x gap-3 gates
       [
         shift('#00102e', '#000616', '#40a0ff'),
         stack('S'),
         GD.gates({ len: 50, seed: 1792, gap: 4, every: 8, maxStep: 2 }),
-        // a wall of electricity: the only way through is the blue portal, it throws you to the bottom
         5,
+        // the only way through the wall is the blue portal, it throws you to the bottom
         `
         ...##########........
         ...##########........
@@ -201,7 +242,7 @@
         ...##########........
         `,
         GD.gates({ len: 40, seed: 1793, gap: 4, every: 8, maxStep: 2 }),
-        stack('3'),
+        sstack('3'),
         GD.gates({ len: 50, seed: 1794, gap: 3, every: 7, maxStep: 2 }),
       ],
       // [4] mini wave 3x, then 4x
@@ -209,7 +250,7 @@
         shift('#1a0030', '#0a0014', '#ff40ff'),
         stack('V'), stack('m'),
         GD.waveRun({ len: 44, seed: 1776, width: 4, slope: 2, open: 3, fill: true }),
-        stack('4'),
+        sstack('4'),
         GD.waveRun({ len: 40, seed: 1777, width: 4, slope: 2, open: 3, fill: true }),
         stack('M'),
         exit('C'),
@@ -219,9 +260,9 @@
         shift('#001c28', '#000a10'),
         8, '^^^', 12,
         `
-        ..........##.........
-        .....##...##...##....
-        ..^^^##^^^##^^^##^^^.
+        ...........##.........
+        ......##...##...##....
+        ..^^..##^^^##^^^##^^^.
         `,
         10, '^^^^', 10,
         spd('3'),
@@ -231,37 +272,71 @@
         ................................................
         .......#########................................
         .......#########................................
-        ...##..#########................................
-        ^^.##^^#########^^^^^^^^^^^^^^^^^^...W..........
+        ...##..#########...................W............
+        ^^.##^^#########^^^^^^^^^^^^^^^^^^..............
         `,
         8, '^^^', 10,
       ],
-      // [6] swing 3x: gap-3 gates, then 4x
+      // [6] swing 3x: gap-3 gates, pylons (coin 3 low between two pylons), then 4x
       [
         shift('#002a20', '#000e0a', '#40ffc0'),
         enter('J'),
-        GD.gates({ len: 56, seed: 1801, gap: 3, every: 7, maxStep: 2, lead: 8 }),
-        stack('4'),
-        GD.gates({ len: 50, seed: 1802, gap: 4, every: 10, maxStep: 2 }),
+        GD.gates({ len: 50, seed: 1801, gap: 3, every: 5, maxStep: 2, lead: 8 }),
+        8,
+        `
+        ##########################################################
+        ......#...........#...........#...........#...............
+        ......#...........#...........#...........#...............
+        ......#...........#...........#...........#...............
+        ......#...........v...........#...........v...............
+        ......v.......................v...........................
+        ............^...........^...........^.........$...........
+        ............#...........#...........#.....................
+        ............#...........#...........#.....................
+        ##########################################################
+        `,
+        sstack('4'),
+        GD.gates({ len: 50, seed: 1802, gap: 4, every: 8, maxStep: 2, lead: 8 }),
       ],
       // [7] dual wave 3x
       [
         shift('#1c0a30', '#0a0414', '#c080ff'),
-        stack('3'), stack('V'), stack('Y'),
-        GD.sym(GD.waveRun({ len: 50, rows: 5, width: 2, seed: 1803, open: 4, fill: true })),
+        sstack('3'), stack('V'), stack('Y'),
+        dual1,
         stack('I'),
       ],
-      // [8] wave 4x finale
+      // [8] wave 4x finale: slopes, the fork, a teleport wall, slopes
       [
         shift('#00222e', '#000c12', '#ffffff'),
-        stack('4'),
-        walled(GD.slopeWave({ len: 50, seed: 1804, width: 2 })),
+        sstack('4'),
+        w4,
+        fork,
+        tpB,
+        w5,
         6,
         exit('C'),
       ],
-      // [9] outro (cube 1x)
+      // [9] cube 4x sprint, then 3x
       [
-        6,
+        shift('#001c28', '#000a10'),
+        8, '^^^', 12, '^^^', 12,
+        `
+        ...........##.........
+        ......##...##...##....
+        ..^^..##^^^##^^^##^^^.
+        `,
+        8,
+        spd('3'),
+        8,
+        `
+        ...o.....o.....o.......
+        .......................
+        ^^^^^^^^^^^^^^^^^^^^...
+        `,
+        10, '^^^', 10,
+      ],
+      // [10] outro (cube 1x)
+      [
         spd('1'),
         shift('#00141c', '#00060a', '#ffffff'),
         8, '^', 9, '^', 12,
