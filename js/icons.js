@@ -247,4 +247,79 @@
   for (const v of [[1, 1], [0.55, 1], [1, 0.6]]) for (const h of hues) PAL.push(GD.U.rgbToHex(GD.U.hsv(h, v[0], v[1])));
   PAL.push('#ffffff', '#c8c8c8', '#8c8c8c', '#505050', '#252525', '#000000');
   GD.PALETTE = PAL;
+
+  // ------------------------------------------------------------------ trails + death effects (icon kit)
+  const rnd = GD.U.rng(4242);
+  const SCATTER = Array.from({ length: 40 }, () => [rnd(), rnd(), rnd(), rnd()]);
+  GD.FX = {
+    trails: ['Classic', 'Neon', 'Ribbon', 'Sparkle', 'Dots', 'Rainbow'],
+    deaths: ['Classic', 'Shatter', 'Shockwave', 'Pixels', 'Firework', 'Implode'],
+
+    /** Static preview for the icon kit (centred on 0,0, about 38 units wide). */
+    preview(g, kind, i, c1, c2) {
+      g.lineCap = 'round';
+      g.lineJoin = 'round';
+      if (kind === 'trail') {
+        const pts = [];
+        for (let k = 0; k <= 16; k++) { const t = k / 16; pts.push([-17 + t * 30, 10 - Math.sin(t * 2.6) * 16]); }
+        const line = (col, w, a) => {
+          g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = w;
+          g.beginPath(); pts.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
+          g.globalAlpha = 1;
+        };
+        if (i === 0) { line('#fff', 6, 0.5); line('#fff', 2, 0.85); }
+        else if (i === 1) { line(c2, 4, 0.95); line('#fff', 1.4, 0.9); }
+        else if (i === 2) {
+          for (let k = 1; k < pts.length; k++) {
+            g.globalAlpha = k / pts.length; g.strokeStyle = c1; g.lineWidth = 1 + (k / pts.length) * 8;
+            g.beginPath(); g.moveTo(pts[k - 1][0], pts[k - 1][1]); g.lineTo(pts[k][0], pts[k][1]); g.stroke();
+          }
+          g.globalAlpha = 1;
+        } else if (i === 3) {
+          g.fillStyle = c2;
+          pts.forEach(([x, y], k) => { const q = SCATTER[k]; g.globalAlpha = 0.3 + 0.7 * (k / pts.length); g.beginPath(); g.arc(x + (q[0] - 0.5) * 6, y + (q[1] - 0.5) * 6, 0.8 + q[2] * 1.8, 0, Math.PI * 2); g.fill(); });
+          g.globalAlpha = 1;
+        } else if (i === 4) {
+          g.fillStyle = c1;
+          pts.forEach(([x, y], k) => { if (k % 2) return; g.globalAlpha = 0.3 + 0.7 * (k / pts.length); g.beginPath(); g.arc(x, y, 2.4, 0, Math.PI * 2); g.fill(); });
+          g.globalAlpha = 1;
+        } else {
+          for (let k = 1; k < pts.length; k++) {
+            g.strokeStyle = `hsl(${k * 22},100%,60%)`; g.lineWidth = 4;
+            g.beginPath(); g.moveTo(pts[k - 1][0], pts[k - 1][1]); g.lineTo(pts[k][0], pts[k][1]); g.stroke();
+          }
+        }
+        const [hx, hy] = pts[pts.length - 1];
+        g.fillStyle = c1; g.strokeStyle = '#000'; g.lineWidth = 1.2;
+        g.fillRect(hx - 4, hy - 4, 8, 8); g.strokeRect(hx - 4, hy - 4, 8, 8);
+        return;
+      }
+      // death effects
+      const sq = (x, y, s, col, a, rot) => { g.save(); g.translate(x, y); g.rotate(rot || 0); g.globalAlpha = a == null ? 1 : a; g.fillStyle = col; g.fillRect(-s / 2, -s / 2, s, s); g.restore(); };
+      const dot = (x, y, r, col, a) => { g.globalAlpha = a == null ? 1 : a; g.fillStyle = col; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1; };
+      const ring = (r, col, w, a) => { g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.stroke(); g.globalAlpha = 1; };
+      if (i === 0) {
+        dot(0, 0, 8, c1, 0.5); ring(13, '#fff', 1.6, 0.8);
+        SCATTER.slice(0, 14).forEach(([a, d, s, c]) => { const an = a * 6.28, r = 6 + d * 11; sq(Math.cos(an) * r, Math.sin(an) * r, 2 + s * 3, c < 0.6 ? c1 : c2, 0.9, an); });
+      } else if (i === 1) {
+        SCATTER.slice(0, 10).forEach(([a, d, s, c], k) => { const an = -0.3 - a * 2.5, r = 5 + d * 9; sq(Math.cos(an) * r * 1.3, -Math.sin(an) * r + d * 6, 4 + s * 4, k % 2 ? c1 : c2, 1, a * 6); });
+      } else if (i === 2) {
+        ring(16, c1, 3, 0.9); ring(11, c2, 2.4, 0.9); ring(6, '#fff', 1.6, 0.9); dot(0, 0, 3, c1, 0.6);
+      } else if (i === 3) {
+        for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) sq(x * 6 * (1 + Math.abs(y) * 0.12), y * 6 * (1 + Math.abs(x) * 0.12), 3.6, (x + y) % 2 ? c1 : c2, 1 - (Math.abs(x) + Math.abs(y)) * 0.12);
+      } else if (i === 4) {
+        for (let k = 0; k < 12; k++) {
+          const an = (k / 12) * 6.28, col = k % 2 ? c1 : c2;
+          g.strokeStyle = col; g.lineWidth = 1.4; g.globalAlpha = 0.7;
+          g.beginPath(); g.moveTo(Math.cos(an) * 5, Math.sin(an) * 5); g.lineTo(Math.cos(an) * 13, Math.sin(an) * 13 + 2); g.stroke();
+          dot(Math.cos(an) * 15, Math.sin(an) * 15 + 3, 2, col, 1);
+        }
+        g.globalAlpha = 1; dot(0, 0, 3.5, '#fff', 0.9);
+      } else {
+        SCATTER.slice(0, 16).forEach(([a, d], k) => { const an = a * 6.28, r = 9 + d * 8; dot(Math.cos(an) * r, Math.sin(an) * r, 1.6, k % 2 ? c1 : c2, 0.9); });
+        dot(0, 0, 7, '#fff', 0.85); ring(10, c1, 1.6, 0.7);
+      }
+      g.globalAlpha = 1;
+    },
+  };
 })(typeof window !== 'undefined' ? window : globalThis);

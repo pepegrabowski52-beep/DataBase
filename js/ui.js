@@ -21,6 +21,15 @@
     return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  function fxCanvas(kind, id, c1, c2, px) {
+    const c = document.createElement('canvas');
+    c.width = c.height = px;
+    const g = c.getContext('2d');
+    g.translate(px / 2, px / 2);
+    g.scale(px / 44, px / 44);
+    GD.FX.preview(g, kind, id, c1, c2);
+    return c;
+  }
   function iconCanvas(mode, id, c1, c2, px, glow) {
     const c = document.createElement('canvas');
     c.width = c.height = px;
@@ -39,7 +48,12 @@
     { stars: 32 }, { coins: 15 }, { stars: 42 }, { level: 'glass' }, { stars: 54 }, { coins: 24 }, { stars: 70 }, { level: 'demon' },
   ];
   const MODE_LEVEL = { ship: 'neon', ball: 'rolling', ufo: 'hover', wave: 'wave', robot: 'cycle', spider: 'cycle', swing: 'hyper' };
+  const FX_REQ = {
+    trail: [null, null, { stars: 15 }, { coins: 12 }, { ach: 'practice' }, { level: 'velocity' }],
+    death: [null, { stars: 8 }, { coins: 6 }, { ach: 'att100' }, { stars: 45 }, { coins: 30 }],
+  };
   function lockReq(mode, i) {
+    if (FX_REQ[mode]) return FX_REQ[mode][i] || null;
     if (mode === 'cube') return i < 8 ? null : CUBE_REQ[(i - 8) % CUBE_REQ.length];
     if (i < 2) return null;
     if (i === 2) return { level: MODE_LEVEL[mode] };
@@ -50,17 +64,23 @@
     const t = app.totals();
     if (req.stars) return t.stars >= req.stars;
     if (req.coins) return t.coins >= req.coins;
+    if (req.ach) return !!(app.save.achievements && app.save.achievements[req.ach]);
     const r = app.save.levels[req.level];
     return !!(r && r.done);
   }
   function reqLabel(req) {
     if (req.stars) return `${req.stars}★`;
     if (req.coins) return `${req.coins}<span class="lock-coin"></span>`;
+    if (req.ach) return '🏆';
     return 'Lv ' + (GD.LEVELS.findIndex((l) => l.id === req.level) + 1);
   }
   function reqText(req) {
     if (req.stars) return `Collect ${req.stars} stars to unlock this icon`;
     if (req.coins) return `Collect ${req.coins} secret coins to unlock this icon`;
+    if (req.ach) {
+      const a = GD.ACHIEVEMENTS.find((x) => x.id === req.ach);
+      return `Get the achievement "${a ? a.name : req.ach}" to unlock this`;
+    }
     const d = GD.LEVELS.find((l) => l.id === req.level);
     return `Complete ${d ? d.name : req.level} to unlock this icon`;
   }
@@ -331,23 +351,26 @@
       const modes = GD.MODES;
       const tabs = $('kit-tabs');
       tabs.innerHTML = '';
-      for (const m of modes) {
+      const fxNames = { trail: GD.FX.trails, death: GD.FX.deaths };
+      for (const m of modes.concat(['trail', 'death'])) {
         const b = document.createElement('button');
-        b.className = 'kit-tab' + (m === this.kitMode ? ' on' : '');
-        b.title = m;
-        b.appendChild(iconCanvas(m, ic[m] || 0, ic.c1, ic.c2, 80, false));
+        b.className = 'kit-tab' + (m === this.kitMode ? ' on' : '') + (fxNames[m] ? ' fx' : '');
+        b.title = fxNames[m] ? (m === 'trail' ? 'Trails' : 'Death effects') : m;
+        b.appendChild(fxNames[m] ? fxCanvas(m, ic[m] || 0, ic.c1, ic.c2, 80) : iconCanvas(m, ic[m] || 0, ic.c1, ic.c2, 80, false));
         b.addEventListener('click', () => { this.click(); this.kitMode = m; this.renderKit(); });
         tabs.appendChild(b);
       }
       const grid = $('kit-grid');
       grid.innerHTML = '';
-      const n = GD.Icons.count[this.kitMode];
+      const isFx = !!fxNames[this.kitMode];
+      const n = isFx ? fxNames[this.kitMode].length : GD.Icons.count[this.kitMode];
       for (let i = 0; i < n; i++) {
         const req = lockReq(this.kitMode, i);
         const locked = !reqMet(app, req);
         const b = document.createElement('button');
-        b.className = 'kit-item' + (ic[this.kitMode] === i ? ' on' : '') + (locked ? ' locked' : '');
-        b.appendChild(iconCanvas(this.kitMode, i, ic.c1, ic.c2, 96, ic.glow));
+        b.className = 'kit-item' + ((ic[this.kitMode] || 0) === i ? ' on' : '') + (locked ? ' locked' : '');
+        b.appendChild(isFx ? fxCanvas(this.kitMode, i, ic.c1, ic.c2, 96) : iconCanvas(this.kitMode, i, ic.c1, ic.c2, 96, ic.glow));
+        if (isFx) b.title = fxNames[this.kitMode][i];
         if (locked) {
           const l = document.createElement('div');
           l.className = 'lock';
@@ -358,6 +381,7 @@
           if (locked) { this.toast(reqText(req)); GD.Audio.sfx('back'); return; }
           this.click();
           ic[this.kitMode] = i;
+          if (isFx) this.toast(`${this.kitMode === 'trail' ? 'Trail' : 'Death effect'}: ${fxNames[this.kitMode][i]}`);
           app.persist();
           this.renderKit();
         });

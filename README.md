@@ -68,7 +68,8 @@ lässt sich umgehen (z. B. indem man über einen Abschnitt hinwegfliegt).
 
 **Drumherum**
 * Hauptmenü, Levelauswahl mit Fortschrittsbalken, Pausemenü, „Level Complete“-Bildschirm
-* Icon-Kit: 24 Cubes plus eigene Designs für alle anderen Modi, 54 Farben, Glow – neue Icons werden mit Sternen, Secret Coins oder geschafften Leveln freigeschaltet
+* Icon-Kit: 24 Cubes plus eigene Designs für alle anderen Modi, 6 Trails, 6 Todes-Effekte, 54 Farben, Glow –
+  neue Icons werden mit Sternen, Secret Coins, Erfolgen oder geschafften Leveln freigeschaltet
 * Prozedurale Musik (Web Audio Synthesizer): jedes Level hat einen eigenen Song, dazu Menü- und Übungsmusik
 * Funktioniert mit Maus, Tastatur, Touch und Gamepad (Querformat auf dem Handy empfohlen)
 * Installierbar als App (PWA) und offline spielbar, sobald die Seite einmal über HTTP(S) geladen wurde

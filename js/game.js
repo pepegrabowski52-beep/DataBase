@@ -330,11 +330,82 @@
 
     deathFx() {
       const p = this.world.p, r = this.r, ic = this.iconCols();
-      r.ring(p.x, p.y, 6, 70, 0.5, ic.c1, 0, true);
-      r.ring(p.x, p.y, 10, 90, 0.6, '#ffffff', 3);
-      r.burst(p.x, p.y, 26, ic.c1, 420, 0.8, 7, { drag: 2.2 });
-      r.burst(p.x, p.y, 14, ic.c2, 300, 0.7, 5, { drag: 2 });
-      r.burst(p.x, p.y, 12, '#ffffff', 520, 0.4, 3, { shape: 'ci', add: true, drag: 3 });
+      const x = p.x, y = p.y, c1 = ic.c1, c2 = ic.c2;
+      const R = Math.random;
+      switch (ic.death || 0) {
+        case 1: // shatter: big pieces that fall down
+          for (let i = 0; i < 22; i++) {
+            const a = R() * Math.PI * 2, v = 150 + R() * 330;
+            r.spawn(x, y, Math.cos(a) * v, Math.sin(a) * v + 260, 1.1, 6 + R() * 7, i % 2 ? c1 : c2, { g: -1500, vr: (R() - 0.5) * 900 });
+          }
+          r.ring(x, y, 8, 60, 0.35, '#ffffff', 3);
+          break;
+        case 2: // shockwave rings
+          r.ring(x, y, 4, 140, 0.9, '#ffffff', 2);
+          r.ring(x, y, 4, 110, 0.7, c1, 7);
+          r.ring(x, y, 4, 80, 0.55, c2, 4);
+          r.ring(x, y, 4, 45, 0.4, c1, 0, true);
+          r.burst(x, y, 10, '#ffffff', 300, 0.35, 3, { shape: 'ci', add: true, drag: 3 });
+          break;
+        case 3: // pixels: the icon falls apart into a grid of squares
+          for (let gy = -2; gy <= 2; gy++) {
+            for (let gx = -2; gx <= 2; gx++) {
+              const px = x + gx * 6, py = y + gy * 6;
+              r.spawn(px, py, gx * 70 + (R() - 0.5) * 80, gy * 70 + (R() - 0.5) * 80 + 60, 0.9 + R() * 0.3, 5.5, (gx + gy) % 2 ? c1 : c2, { drag: 1.6, g: -300, rot: 0.001 });
+            }
+          }
+          break;
+        case 4: // firework
+          r.ring(x, y, 6, 50, 0.4, c2, 0, true);
+          r.burst(x, y, 30, c1, 420, 1.0, 5, { shape: 'ci', add: true, drag: 1.2, g: -500 });
+          r.burst(x, y, 20, c2, 300, 0.9, 4, { shape: 'ci', add: true, drag: 1.2, g: -500 });
+          r.burst(x, y, 16, '#ffffff', 560, 0.5, 2.5, { shape: 'ci', add: true, drag: 2 });
+          break;
+        case 5: // implode: particles rush into the centre, then a flash
+          for (let i = 0; i < 26; i++) {
+            const a = R() * Math.PI * 2, d = 60 + R() * 40;
+            r.spawn(x + Math.cos(a) * d, y + Math.sin(a) * d, -Math.cos(a) * d * 2.6, -Math.sin(a) * d * 2.6, 0.38, 4 + R() * 3, i % 2 ? c1 : c2, { shape: 'ci', add: true });
+          }
+          r.ring(x, y, 2, 70, 0.6, '#ffffff', 0, true);
+          r.ring(x, y, 10, 100, 0.7, c1, 3);
+          break;
+        default:
+          r.ring(x, y, 6, 70, 0.5, c1, 0, true);
+          r.ring(x, y, 10, 90, 0.6, '#ffffff', 3);
+          r.burst(x, y, 26, c1, 420, 0.8, 7, { drag: 2.2 });
+          r.burst(x, y, 14, c2, 300, 0.7, 5, { drag: 2 });
+          r.burst(x, y, 12, '#ffffff', 520, 0.4, 3, { shape: 'ci', add: true, drag: 3 });
+      }
+    }
+
+    /** The streak behind the player after orbs / pads, in the style chosen in the icon kit. */
+    drawStreak(ic) {
+      const st = this.streak, r = this.r;
+      if (st.length < 2) return;
+      const style = ic.trail || 0;
+      if (style === 3) return; // sparkle: particles only (see emitTrails)
+      if (style === 0) { r.drawTrail(st, 'rgba(255,255,255,0.5)', 6, 0.5); return; }
+      if (style === 1) { r.drawTrail(st, ic.c2, 4, 0.9); return; }
+      const ctx = r.ctx;
+      ctx.save();
+      ctx.lineCap = 'round';
+      const n = st.length;
+      for (let i = 1; i < n; i++) {
+        const k = i / n;
+        const x0 = r.sx(st[i - 1][0]), y0 = r.sy(st[i - 1][1]), x1 = r.sx(st[i][0]), y1 = r.sy(st[i][1]);
+        if (style === 4) {
+          if (i % 2) continue;
+          ctx.globalAlpha = 0.25 + 0.75 * k;
+          ctx.fillStyle = ic.c1;
+          ctx.beginPath(); ctx.arc(x1, y1, 3 * r.S, 0, Math.PI * 2); ctx.fill();
+          continue;
+        }
+        ctx.globalAlpha = style === 2 ? k : 0.85;
+        ctx.strokeStyle = style === 2 ? ic.c1 : `hsl(${(i * 14 + this.time * 360) % 360},100%,60%)`;
+        ctx.lineWidth = (style === 2 ? 1 + k * 9 : 5) * r.S;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      }
+      ctx.restore();
     }
 
     emitTrails(dt) {
@@ -349,6 +420,9 @@
       if (this.streakT > 0) {
         this.streakT -= dt;
         this.streak.push([p.x, p.y, this.time]);
+        if (ic.trail === 3 && emit) {
+          for (let i = 0; i < 2; i++) this.r.spawn(p.x - 6, p.y + (Math.random() - 0.5) * 16, -60 - Math.random() * 40, (Math.random() - 0.5) * 60, 0.45, 2 + Math.random() * 3, ic.c2, { shape: 'ci', add: true, drag: 1 });
+        }
       }
       while (this.streak.length && this.time - this.streak[0][2] > 0.25) this.streak.shift();
     }
@@ -493,7 +567,7 @@
         const pts = this.trail.concat(this.state === 'play' ? [[this.rx, this.ry]] : []);
         r.drawTrail(pts, ic.c1, p.mini ? 5 : 8, 0.95);
       }
-      if (this.streak.length > 1) r.drawTrail(this.streak, 'rgba(255,255,255,0.5)', 6, 0.5);
+      this.drawStreak(ic);
       const p2 = w.p2;
       if (this.trail2.length > 1 && p2) {
         const pts = this.trail2.concat(this.state === 'play' ? [[this.rx, this.ry2]] : []);

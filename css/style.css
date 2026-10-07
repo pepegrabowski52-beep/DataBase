@@ -332,6 +332,7 @@ input[type=range]::-moz-range-thumb { width: calc(var(--u) * 4.4); height: calc(
 .kit-tab { width: calc(var(--u) * 9); height: calc(var(--u) * 9); border-radius: calc(var(--u) * 1.6); background: rgba(0,0,0,0.35); border: 3px solid rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; }
 .kit-tab canvas { width: 82%; height: 82%; }
 .kit-tab.on { background: linear-gradient(180deg, var(--green1), var(--green2)); border-color: #0f2d06; }
+.kit-tab.fx { border-radius: 50%; }
 .kit-body { flex: 1; min-height: 0; width: 100%; display: flex; gap: calc(var(--u) * 2); }
 .kit-grid { flex: 1.25; padding: calc(var(--u) * 2); display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 10), 1fr)); gap: calc(var(--u) * 1.2); align-content: start; overflow: auto; }
 .kit-item { aspect-ratio: 1; border-radius: calc(var(--u) * 1.4); background: rgba(0,0,0,0.25); border: 3px solid transparent; position: relative; display: flex; align-items: center; justify-content: center; }

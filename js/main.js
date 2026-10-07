@@ -10,7 +10,7 @@
     return {
       v: 1,
       settings: { music: 0.8, sfx: 0.8, showPct: true, showBar: true, autoCP: true, showFps: false, hitboxes: false, lowDetail: false },
-      icons: { c1: '#7dff00', c2: '#00ffff', glow: false, sel: 'cube', cube: 0, ship: 0, ball: 0, ufo: 0, wave: 0, robot: 0, spider: 0, swing: 0 },
+      icons: { c1: '#7dff00', c2: '#00ffff', glow: false, sel: 'cube', cube: 0, ship: 0, ball: 0, ufo: 0, wave: 0, robot: 0, spider: 0, swing: 0, trail: 0, death: 0 },
       levels: {},
       stats: { jumps: 0, attempts: 0, deaths: 0, completed: 0 },
       achievements: {},
