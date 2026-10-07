@@ -70,6 +70,27 @@
   def('pSingle', { kind: 'portal', cat: 'portal', name: 'Single Portal', hb: { x: 0, y: 0, w: 34, h: 86 }, art: 'xportal', glyph: 'single', c: '#3ab6ff', col: 'none', vr: 50 });
   def('pMirror', { kind: 'portal', cat: 'portal', name: 'Mirror Portal', hb: { x: 0, y: 0, w: 34, h: 86 }, art: 'xportal', glyph: 'mirror', c: '#ffb43a', col: 'none', vr: 50 });
   def('pUnmirror', { kind: 'portal', cat: 'portal', name: 'Unmirror Portal', hb: { x: 0, y: 0, w: 34, h: 86 }, art: 'xportal', glyph: 'unmirror', c: '#47c8ff', col: 'none', vr: 50 });
+  // teleport pair: the blue entrance moves the player to the nearest orange exit ahead of it
+  def('pTele', { kind: 'portal', cat: 'portal', name: 'Teleport Portal', hb: { x: 0, y: 0, w: 34, h: 86 }, art: 'xportal', glyph: 'tele', c: '#2a9bff', col: 'none', vr: 50 });
+  def('pTeleO', { kind: 'portal', cat: 'portal', name: 'Teleport Exit', hb: { x: 0, y: 0, w: 34, h: 86 }, art: 'xportal', glyph: 'teleO', c: '#ff9a24', col: 'none', vr: 50 });
+
+  /** Links every teleport entrance to its exit: the closest pTeleO that is not behind it. Returns Map(entrance -> exit). */
+  GD.teleLinks = function (objs) {
+    const exits = objs.filter((o) => o.t === 'pTeleO');
+    const links = new Map();
+    for (const o of objs) {
+      if (o.t !== 'pTele') continue;
+      let best = null, bd = Infinity;
+      for (const e of exits) {
+        const dx = e.x - o.x, dy = e.y - o.y;
+        if (dx < -15) continue;
+        const dd = dx * dx + dy * dy;
+        if (dd < bd) { bd = dd; best = e; }
+      }
+      if (best) links.set(o, best);
+    }
+    return links;
+  };
 
   const spHB = { x: 0, y: 0, w: 35, h: 44 };
   def('sp0', { kind: 'portal', cat: 'speed', name: 'Speed 0.5x', hb: spHB, art: 'speed', spd: 0, c: '#ffb43a', col: 'none', vr: 35 });

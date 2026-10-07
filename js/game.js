@@ -304,6 +304,17 @@
             for (let i = 0; i < 6; i++) r.spawn(o.x, o.y, (Math.random() - 0.5) * 30, 160 + i * 20, 0.8, 7 - i, '#ffd23a', { shape: 'ci' });
             break;
           }
+          case 'tele': {
+            const a = w.objs[e.obj], b = w.objs[e.to];
+            r.ring(a.x + a.ox, a.y + a.oy, 10, 60, 0.4, a.def.c, 3);
+            r.ring(b.x + b.ox, b.y + b.oy, 60, 8, 0.4, b.def.c, 3);
+            r.burst(e.tx, e.ty, 14, b.def.c, 260, 0.45, 4, { shape: 'ci', add: true, drag: 2 });
+            this.trail.length = 0;
+            this.trail2.length = 0;
+            this.prev.x = w.p.x; this.prev.y = w.p.y;
+            if (w.p2) { this.prev2.x = w.p2.x; this.prev2.y = w.p2.y; }
+            break;
+          }
           case 'teleport':
             for (let y = Math.min(e.from, e.to); y < Math.max(e.from, e.to); y += 8) {
               r.spawn(e.x, y, -40, 0, 0.35, 5, ic.c2, { add: true });

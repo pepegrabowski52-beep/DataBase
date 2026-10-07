@@ -104,6 +104,7 @@
       }
       trig.sort((a, b) => a.x - b.x);
       this.starts.sort((a, b) => a.x - b.x);
+      for (const [a, b] of GD.teleLinks(objs)) a.link = b.id;
 
       this.groups = new Map();
       for (const o of objs) {
@@ -874,6 +875,18 @@
         return;
       }
       switch (o.t) {
+        case 'pTele': {
+          const t = o.link != null ? this.objs[o.link] : null;
+          if (!t) break;
+          const dx = t.x + t.ox - (o.x + o.ox), dy = t.y + t.oy - (o.y + o.oy);
+          const fx = p.x, fy = p.y;
+          p.x += dx;
+          p.y += dy;
+          // in dual mode both players share x: the second player's x is derived from the first
+          if (dx && this.isP2()) main.x += dx;
+          this.ev('tele', { fx, fy, tx: p.x, ty: p.y, obj: o.id, to: t.id });
+          break;
+        }
         case 'pDual':
           if (!this.p2) {
             const p2 = Object.assign({}, p);

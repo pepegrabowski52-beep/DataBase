@@ -335,7 +335,17 @@
       const circ = (x, y, r) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); g.stroke(); };
       if (d.glyph === 'dual') { circ(0, -6, 3.2); circ(0, 6, 3.2); }
       else if (d.glyph === 'single') circ(0, 0, 3.6);
-      else {
+      else if (d.glyph === 'tele' || d.glyph === 'teleO') {
+        // a ring with an arrow: into the ring (entrance) or out of it (exit)
+        g.beginPath(); g.arc(0, 0, 6, 0, Math.PI * 2);
+        g.lineWidth = 3.4; g.strokeStyle = 'rgba(0,0,0,0.6)'; g.stroke();
+        g.lineWidth = 1.8; g.strokeStyle = '#fff'; g.stroke();
+        const s = d.glyph === 'tele' ? 1 : -1;
+        g.beginPath();
+        g.moveTo(-3 * s, -3.5); g.lineTo(2 * s, 0); g.lineTo(-3 * s, 3.5); g.closePath();
+        g.lineWidth = 1.2; g.strokeStyle = 'rgba(0,0,0,0.6)';
+        g.fill(); g.stroke();
+      } else {
         g.beginPath();
         g.moveTo(-5, -6); g.lineTo(-1, -9); g.lineTo(-1, -3); g.closePath();
         g.moveTo(5, 6); g.lineTo(1, 3); g.lineTo(1, 9); g.closePath();

@@ -803,6 +803,18 @@
       }
       for (const o of fronts) r.drawObject(o, OBJ[o.t], cols, this.time, 0, 1, false);
       r.drawGround(cols, cam, 0, false, 0, this.settings.gStyle);
+      // teleport links
+      ctx.setLineDash([6, 5]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,190,90,0.8)';
+      ctx.beginPath();
+      for (const [a, b] of GD.teleLinks(this.objs)) {
+        if (Math.max(a.x, b.x) < x0 || Math.min(a.x, b.x) > x1) continue;
+        ctx.moveTo(r.sx(a.x), r.sy(a.y));
+        ctx.lineTo(r.sx(b.x), r.sy(b.y));
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
       // group labels / selection
       ctx.lineWidth = 2;
       for (const o of this.objs) {

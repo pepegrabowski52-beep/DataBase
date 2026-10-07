@@ -33,7 +33,8 @@ ohne Build-Schritt, ohne Abhängigkeiten. Einfach `index.html` öffnen und spiel
 **Gameplay (Physik mit den Original-Konstanten von Geometry Dash)**
 * 8 Spielmodi: Cube, Ship, Ball, UFO, Wave, Robot, Spider, Swing – jeweils auch als Mini-Version
 * Geschwindigkeitsportale 0.5x / 1x / 2x / 3x / 4x, Schwerkraft-Portale, Mini-/Normal-Portale
-* **Dual-Modus** (zwei gespiegelte Spieler mit einer Taste) und **Spiegel-Portale** (Bildschirm dreht sich um)
+* **Dual-Modus** (zwei gespiegelte Spieler mit einer Taste), **Spiegel-Portale** (Bildschirm dreht sich um)
+  und **Teleport-Portale** (blauer Eingang → nächster oranger Ausgang)
 * Orbs (gelb, pink, rot, blau, grün, schwarz) und Pads (gelb, pink, rot, blau) inkl. Klick-Puffer wie im Original
 * Spikes, kleine Spikes, Bodenspikes, Sägeblätter, Blöcke, Halbblöcke, **Schrägen** (45° und 22,5°) zum Hochlaufen, Abspringen und Gleiten (Wave)
 * 3 geheime Münzen pro Level, Sterne für abgeschlossene Level
@@ -55,7 +56,7 @@ ohne Build-Schritt, ohne Abhängigkeiten. Einfach `index.html` öffnen und spiel
 | 8 | Twin Peaks | Hard ★6 | Dual-Modus (Cube, Ship, UFO, Wave) |
 | 9 | Hover Drive | Harder ★7 | UFO |
 | 10 | Time Bender | Harder ★8 | Wave |
-| 11 | Looking Glass | Harder ★8 | Spiegel-Portale, Robot, Spider, Swing |
+| 11 | Looking Glass | Harder ★8 | Spiegel- und Teleport-Portale, Robot, Spider, Swing |
 | 12 | Cycle Core | Insane ★9 | Robot, Spider |
 | 13 | Hyper Drive | Insane ★10 | Swing, 3x |
 | 14 | Velocity | Insane ★10 | alle Geschwindigkeiten von 0,5x bis 4x |
@@ -126,7 +127,7 @@ Level werden als ASCII-Abschnitte geschrieben (unterste Zeile = Boden), z. B.:
 `
 ```
 
-`#` Block, `/` `&` Schrägen, `(-` `-)` flache Schrägen, `^` Spike, `o` gelber Orb, `O` gelbes Pad, `S` Ship-Portal, `Y` Dual-Portal, `Z` Spiegel-Portal,
+`#` Block, `/` `&` Schrägen, `(-` `-)` flache Schrägen, `^` Spike, `o` gelber Orb, `O` gelbes Pad, `S` Ship-Portal, `Y` Dual-Portal, `Z` Spiegel-Portal, `K` `W` Teleport,
 `$` Münze … – die vollständige Zeichenliste steht oben in `js/levelfmt.js`. Generatoren wie `GD.gates`
 (Ship/UFO/Swing-Tore), `GD.waveRun` / `GD.slopeWave` (Wave-Kanäle aus Blöcken bzw. Schrägen) und `GD.sym` (spiegelt eine Hälfte für Dual-Passagen)
 erzeugen längere Abschnitte.
