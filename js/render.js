@@ -629,7 +629,10 @@
     }
 
     objSprite(d, rgb) {
-      const key = d.art + '|' + d.key + '|' + (rgb ? (rgb[0] | 0) + ',' + (rgb[1] | 0) + ',' + (rgb[2] | 0) : '');
+      // tinted sprites are cached per colour: round to steps of 8 so a colour fade on an object channel
+      // reuses a few dozen sprites instead of creating a new canvas for every frame of the fade
+      if (rgb) rgb = [Math.min(255, Math.round(rgb[0] / 8) * 8), Math.min(255, Math.round(rgb[1] / 8) * 8), Math.min(255, Math.round(rgb[2] / 8) * 8)];
+      const key = d.art + '|' + d.key + '|' + (rgb ? rgb[0] + ',' + rgb[1] + ',' + rgb[2] : '');
       const size = SPRITE_SIZE[d.art] ? SPRITE_SIZE[d.art](d) : 36;
       return this.sprite(key, size, (g) => ART[d.art](g, rgb || [255, 255, 255], d));
     }
@@ -916,7 +919,7 @@
           this.blit(sp, x, y, 0, k * s, k * s, alpha);
           const ring = this.sprite('orbring', 42, ART.orbring);
           this.blit(ring, x, y, time * 120, s, s, alpha * (used ? 0.4 : 0.85));
-          if (d.dash) this.blit(this.sprite('dasharrow', 30, ART.dasharrow), x, y, o.r || 0, s, s, alpha);
+          if (d.dash) this.blit(this.sprite('dasharrow', 30, ART.dasharrow), x, y, GD.dashAngle(o.r), s, s, alpha);
           break;
         }
         case 'coin': {

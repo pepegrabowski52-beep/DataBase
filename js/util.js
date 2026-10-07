@@ -133,6 +133,9 @@
     return new Response(s).text();
   };
 
+  /** Escape text for use in HTML (element content and quoted attribute values). */
+  U.esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
   U.fmtTime = (sec) => {
     sec = Math.max(0, Math.floor(sec));
     const m = Math.floor(sec / 60), s = sec % 60;

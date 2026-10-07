@@ -184,7 +184,7 @@
       if (!this.ctx) return;
       opts = opts || {};
       this.stop(opts.fade);
-      const def = SONGS[id] || SONGS.neon;
+      const def = Object.prototype.hasOwnProperty.call(SONGS, id) ? SONGS[id] : SONGS.neon;
       if (!def._c) def._c = compose(def);
       const c = this.ctx;
       const bus = c.createGain();
@@ -193,11 +193,17 @@
       bus.connect(this.musicGain);
       const pump = c.createGain();
       pump.connect(bus);
-      const rev = c.createConvolver();
-      rev.buffer = this.ir;
-      const revG = c.createGain();
-      revG.gain.value = 0.22;
-      rev.connect(revG).connect(bus);
+      // one shared reverb: building a ConvolverNode with a long impulse response stalls the main thread,
+      // and this runs on every attempt; each song only gets its own send into it
+      if (!this.revNode) {
+        this.revNode = c.createConvolver();
+        this.revNode.buffer = this.ir;
+        const out = c.createGain();
+        out.gain.value = 0.22;
+        this.revNode.connect(out).connect(this.musicGain);
+      }
+      const rev = c.createGain();
+      rev.connect(this.revNode);
       const dly = c.createDelay(1);
       dly.delayTime.value = (60 / def.bpm) * 0.75;
       const fb = c.createGain();
@@ -219,8 +225,13 @@
 
     stop(fade) {
       if (!this.cur || !this.ctx) return;
-      const bus = this.cur.bus;
+      const bus = this.cur.bus, rev = this.cur.rev;
       const t = this.ctx.currentTime;
+      // close this song's reverb send (the tail already in the shared reverb fades out naturally)
+      rev.gain.cancelScheduledValues(t);
+      rev.gain.setValueAtTime(rev.gain.value, t);
+      rev.gain.linearRampToValueAtTime(0, t + (fade || 0.04));
+      setTimeout(() => { try { rev.disconnect(); } catch (e) { /* ignore */ } }, ((fade || 0.04) + 0.3) * 1000);
       bus.gain.cancelScheduledValues(t);
       bus.gain.setValueAtTime(bus.gain.value, t);
       bus.gain.linearRampToValueAtTime(0, t + (fade || 0.04));

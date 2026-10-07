@@ -126,6 +126,7 @@
     scene: 'loading',
     input: { hold: false, keys: new Set(), pointers: new Set() },
     game: null,
+    deletedIds: new Set(),
     editor: null,
 
     init() {
@@ -160,10 +161,43 @@
       for (const k of ['settings', 'icons', 'stats']) this.save[k] = Object.assign({}, d[k], this.save[k] || {});
       this.save.levels = this.save.levels || {};
       this.save.achievements = this.save.achievements || {};
-      this.userLevels = U.store.get(USER_KEY, []) || [];
+      const ul = U.store.get(USER_KEY, []);
+      this.userLevels = (Array.isArray(ul) ? ul : []).filter((l) => l && typeof l === 'object').map((l) => {
+        const c = GD.sanitizeLevel(l);
+        return Object.assign(l, { name: c.name, settings: c.settings, objects: c.objects });
+      });
       GD.Audio.setVolumes(this.save.settings.music, this.save.settings.sfx);
     },
+    /** Another tab may have saved progress since we loaded: merge it in before writing (never lose a record). */
+    mergeStoredSave() {
+      const o = U.store.get(SAVE_KEY, null);
+      if (!o || o.v !== 1 || typeof o !== 'object') return;
+      const s = this.save;
+      const max = (a, b) => Math.max(+a || 0, +b || 0);
+      for (const id of Object.keys(o.levels || {})) {
+        const b = o.levels[id], a = s.levels[id];
+        if (!b || typeof b !== 'object') continue;
+        if (!a) { s.levels[id] = b; continue; }
+        a.best = max(a.best, b.best);
+        a.pbest = max(a.pbest, b.pbest);
+        a.att = max(a.att, b.att);
+        a.jumps = max(a.jumps, b.jumps);
+        a.done = !!(a.done || b.done);
+        a.coins = [0, 1, 2].map((i) => !!((a.coins || [])[i] || (b.coins || [])[i]));
+      }
+      for (const k of Object.keys(o.achievements || {})) if (!s.achievements[k]) s.achievements[k] = o.achievements[k];
+      if (o.vault && typeof o.vault === 'object') {
+        s.vault = s.vault || {};
+        for (const k of Object.keys(o.vault)) if (o.vault[k]) s.vault[k] = true;
+      }
+      for (const k of Object.keys(o.stats || {})) {
+        const v = o.stats[k];
+        if (typeof v === 'number' && typeof s.stats[k] === 'number') s.stats[k] = Math.max(s.stats[k], v);
+        else if (v === true) s.stats[k] = true;
+      }
+    },
     persist() {
+      if (!this.resetting) this.mergeStoredSave();
       U.store.set(SAVE_KEY, this.save);
       if (this.scene !== 'game' || !this.game || this.game.state !== 'play') this.checkAchievements();
     },
@@ -187,13 +221,30 @@
       }
     },
     persistUser() {
-      if (!U.store.set(USER_KEY, this.userLevels)) GD.UI.toast('Could not save (storage full or blocked)');
+      // levels created or saved in another tab since we loaded must not be overwritten
+      const stored = U.store.get(USER_KEY, []);
+      if (Array.isArray(stored)) {
+        for (const l of stored) {
+          if (!l || typeof l !== 'object' || !l.id || this.deletedIds.has(l.id)) continue;
+          const mine = this.userLevels.find((x) => x.id === l.id);
+          const c = GD.sanitizeLevel(l);
+          if (!mine) this.userLevels.push(Object.assign(l, { name: c.name, settings: c.settings, objects: c.objects }));
+          else if ((+l.updated || 0) > (+mine.updated || 0) && !(this.editor && this.editor.ul === mine)) {
+            Object.assign(mine, { name: c.name, settings: c.settings, objects: c.objects, updated: l.updated, verified: !!l.verified });
+          }
+        }
+      }
+      const ok = U.store.set(USER_KEY, this.userLevels);
+      if (!ok) GD.UI.toast('Could not save (storage full or blocked)');
       this.checkAchievements();
+      return ok;
     },
     resetSave() {
       this.save = defaultSave();
+      this.resetting = true;
       if (this.renderer.lowDetail) { this.renderer.lowDetail = false; this.onResize(); }
       this.persist();
+      this.resetting = false;
     },
     levelRecord(id) {
       if (!this.save.levels[id]) this.save.levels[id] = { best: 0, pbest: 0, att: 0, jumps: 0, done: false, coins: [false, false, false] };
@@ -232,15 +283,29 @@
     bindInput() {
       const JUMP = new Set(['Space', 'ArrowUp', 'KeyW', 'Enter', 'NumpadEnter']);
       root.addEventListener('keydown', (e) => {
-        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+        const tg = e.target;
+        const typing = tg && (tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT' ||
+          (tg.tagName === 'INPUT' && !/^(range|checkbox|radio|button)$/.test(tg.type)));
+        if (typing) {
           if (e.code === 'Escape' && GD.UI.dialogOpen()) GD.UI.closeDialog();
           return;
         }
+        if (tg && tg.tagName === 'INPUT') tg.blur(); // sliders / checkboxes must not swallow game keys
         if (GD.UI.dialogOpen()) {
           if (e.code === 'Escape') GD.UI.closeDialog();
           return;
         }
         const g = this.isGameInput();
+        if (this.scene === 'game' && this.game && this.game.state === 'complete' && this.game.shownComplete) {
+          // keyboard on the Level Complete screen: Esc / Backspace = menu, R / Enter = replay
+          if (e.code === 'Escape' || e.code === 'Backspace') { e.preventDefault(); document.getElementById('c-menu').click(); }
+          else if ((e.code === 'KeyR' || e.code === 'Enter') && !e.repeat) { e.preventDefault(); document.getElementById('c-replay').click(); }
+          return;
+        }
+        if (this.scene === 'game' && this.game && this.game.paused) {
+          if ((e.code === 'Enter' || e.code === 'Space') && tg && tg.tagName === 'BUTTON') return; // Tab + Enter on pause buttons
+          if (e.code === 'Backspace') { e.preventDefault(); document.getElementById('p-exit').click(); return; }
+        }
         if (JUMP.has(e.code) && (g || (this.scene === 'game' && this.game))) {
           e.preventDefault();
           if (!e.repeat && g) { this.input.keys.add(e.code); this.updateHold(); }
@@ -264,6 +329,7 @@
       root.addEventListener('blur', () => {
         this.input.keys.clear();
         this.input.pointers.clear();
+        if (this.editor) this.editor.keys.clear();
         this.updateHold();
       });
       const cv = this.cv;
@@ -322,6 +388,16 @@
       }
       const prev = this.padPrev || {};
       this.padPrev = { jump, start, back };
+      const gm = this.scene === 'game' && this.game;
+      if (gm && this.game.state === 'complete' && this.game.shownComplete) {
+        // Level Complete: A = replay (fresh press only), B / Start = menu
+        if (jump && !prev.jump && this.padCompleteArmed) document.getElementById('c-replay').click();
+        else if ((back && !prev.back) || (start && !prev.start)) document.getElementById('c-menu').click();
+        if (!jump) this.padCompleteArmed = true;
+        return;
+      }
+      this.padCompleteArmed = false;
+      if (gm && this.game.paused && back && !prev.back) { document.getElementById('p-exit').click(); return; }
       const g = this.isGameInput();
       if (jump !== !!prev.jump) {
         if (jump) this.input.keys.add('pad'); else this.input.keys.delete('pad');
@@ -388,6 +464,7 @@
 
     exitGame() {
       const g = this.game;
+      if (g && g.state === 'play') g.saveAttempt(); // leaving mid-run still counts as an attempt
       if (GD.Audio.ctx && GD.Audio.ctx.state === 'suspended') GD.Audio.ctx.resume();
       GD.Audio.stop(0.1);
       this.game = null;

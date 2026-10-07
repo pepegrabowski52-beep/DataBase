@@ -22,6 +22,16 @@
   GD.PH = { SPEEDS, G, JUMP, DT, CORRIDOR };
   GD.slopeLine = slopeLine;
 
+  /** Dash orb aim in degrees (0 = straight ahead, positive = down on screen): backward arrows are mirrored forward,
+   *  and the dash is at most 70° steep. Used by the physics and by the renderer for the arrow. */
+  GD.dashAngle = function (rot) {
+    let r = (((rot || 0) % 360) + 360) % 360;
+    if (r > 180) r -= 360;
+    if (r > 90) r = 180 - r;
+    else if (r < -90) r = -180 - r;
+    return r < -70 ? -70 : r > 70 ? 70 : r;
+  };
+
   function copyOff(off) {
     const o = {};
     for (const k in off) o[k] = off[k].slice();
@@ -219,6 +229,7 @@
         used2: this.used2.slice(),
         p2: this.p2 ? Object.assign({}, this.p2) : null,
         mirror: this.mirror,
+        shake: this.shakeFx ? Object.assign({}, this.shakeFx) : null,
         coins: this.coinsGot.slice(),
       };
     }
@@ -240,6 +251,7 @@
       this.used2 = s.used2 ? s.used2.slice() : [];
       this.p2 = s.p2 ? Object.assign({}, s.p2) : null;
       this.mirror = !!s.mirror;
+      this.shakeFx = s.shake ? Object.assign({}, s.shake) : null;
       this.coinsGot = s.coins.slice();
       if (this.dynList.length || this.dynAll.length) {
         for (const o of this.dynAll) {
@@ -428,11 +440,12 @@
       this.effects(dt);
       if (this.carry) p.y += this.carry;
 
+      const x0 = p.x;
       this.stepPlayer(hold, dt);
       if (this.p2 && !p.dead) {
         // second player (dual mode): same physics, own state, swapped in temporarily
         const p2 = this.p2;
-        p2.x = p.x - SPEEDS[p.spd] * dt;
+        p2.x = x0;
         const u = this.used;
         this.p = p2;
         this.used = this.used2;
@@ -442,6 +455,12 @@
         this.p = p;
         if (p2.dead) p.dead = true;
         if (this.p2 && this.p2 !== p2) this.p2.x = p.x; // dual portal touched by player 2
+        else if (this.p2) {
+          // both players share x; a teleport moves the pair
+          if (p.teled) p2.x = p.x;
+          else if (p2.teled) p.x = p2.x;
+          else p2.x = p.x;
+        }
       }
       if (!p.dead && p.x >= this.endX) {
         p.done = true;
@@ -452,6 +471,7 @@
     stepPlayer(hold, dt) {
       const p = this.p;
       p.tp = null;
+      p.teled = false;
       let hw = this.hw();
       if (p.buffer) this.orbs(hw);
       if (p.dash && !hold) p.dash = 0; // a dash lasts while the button is held
@@ -495,7 +515,9 @@
           break;
         case 'robot':
           if (p.onGround && hold) {
-            p.vy = p.gr * ROBOT_V * ms;
+            const lv = SPEEDS[p.spd] * (p.slopeK || 0);
+            p.rbLv = lv * p.gr > 0 ? lv : 0;
+            p.vy = p.gr * ROBOT_V * ms + p.rbLv;
             p.rbOn = true;
             p.rb = 0;
             p.onGround = false;
@@ -504,7 +526,7 @@
             this.ev('jump');
           } else if (p.rbOn && hold && p.rb < ROBOT_T) {
             p.rb += dt;
-            p.vy = p.gr * ROBOT_V * ms;
+            p.vy = p.gr * ROBOT_V * ms + (p.rbLv || 0);
           } else {
             p.rbOn = false;
             p.vy -= p.gr * G * 0.9 * dt;
@@ -648,11 +670,11 @@
             if (p.gr > 0 && o.sBelow) {
               const pen = sy - y0;
               const touch = hit(o, x0, y0, x1, y1) || (wasGround && within && pen <= 0 && -pen <= stick);
-              if (touch && p.vy <= 0 && pen <= stol && (best === null || sy > by)) { best = o; by = sy; bk = o.sk; }
+              if (touch && p.vy <= Math.max(0, o.sk * speed) && pen <= stol && (best === null || sy > by)) { best = o; by = sy; bk = o.sk; }
             } else if (p.gr < 0 && !o.sBelow) {
               const pen = y1 - sy;
               const touch = hit(o, x0, y0, x1, y1) || (wasGround && within && pen <= 0 && -pen <= stick);
-              if (touch && p.vy >= 0 && pen <= stol && (best === null || sy < by)) { best = o; by = sy; bk = o.sk; }
+              if (touch && p.vy >= Math.min(0, o.sk * speed) && pen <= stol && (best === null || sy < by)) { best = o; by = sy; bk = o.sk; }
             } else if (hit(o, x0, y0, x1, y1)) {
               // flat side of a slope behaves like a block face
               if (p.gr > 0 && p.vy <= 0 && y0 >= o.y1 - tol && !o.sBelow && (best === null || o.y1 > by)) { best = o; by = o.y1; bk = 0; }
@@ -680,8 +702,8 @@
             if (o.sl && ((p.gr > 0 && !o.sBelow) || (p.gr < 0 && o.sBelow))) {
               const sy = slopeLine(o, p.x);
               const stol = tol + Math.abs(o.sk) * speed * DT * 2;
-              if (p.gr > 0 && p.vy >= 0 && y1 - sy <= stol) { p.y = sy - hw; p.vy = 0; p.onCeil = true; }
-              else if (p.gr < 0 && p.vy <= 0 && sy - y0 <= stol) { p.y = sy + hw; p.vy = 0; p.onCeil = true; }
+              if (p.gr > 0 && p.vy >= Math.min(0, o.sk * speed) && y1 - sy <= stol) { p.y = sy - hw; p.vy = 0; p.onCeil = true; }
+              else if (p.gr < 0 && p.vy <= Math.max(0, o.sk * speed) && sy - y0 <= stol) { p.y = sy + hw; p.vy = 0; p.onCeil = true; }
               y0 = p.y - hw;
               y1 = p.y + hw;
               continue;
@@ -797,10 +819,7 @@
         case 'orbM':
         case 'orbD': {
           if (o.t === 'orbM') p.gr = -p.gr;
-          // direction from the orb's rotation (0 = straight ahead, clockwise on screen), at most 70° up or down
-          let r = (((o.r || 0) % 360) + 360) % 360;
-          if (r > 180) r -= 360;
-          r = r < -70 ? -70 : r > 70 ? 70 : r;
+          const r = GD.dashAngle(o.r);
           p.dash = 1;
           p.dvy = -Math.tan((r * Math.PI) / 180) * SPEEDS[p.spd];
           p.vy = p.dvy;
@@ -887,6 +906,12 @@
           else this.dualCorridor(oy);
         } else if (CORRIDOR[d.mode]) { if (!keep) this.setCorridor(d.mode, oy); }
         else { this.bnd.floor = 0; this.bnd.ceil = null; }
+        const hw = this.hw(), b = this.bnd;
+        for (const q of this.p2 ? [main, this.p2] : [main]) {
+          if (!q.onGround || q.gobj != null) continue;
+          const onBound = q.gr > 0 ? Math.abs(q.y - hw - b.floor) < 0.5 : b.ceil != null && Math.abs(q.y + hw - b.ceil) < 0.5;
+          if (!onBound) q.onGround = false;
+        }
         this.ev('portal', { obj: o.id, mode: d.mode });
         return;
       }
@@ -898,8 +923,23 @@
           const fx = p.x, fy = p.y;
           p.x += dx;
           p.y += dy;
-          // in dual mode both players share x: the second player's x is derived from the first
-          if (dx && this.isP2()) main.x += dx;
+          p.teled = true; // (dual mode: the other player takes over this x after the step)
+          // whatever the player stood on at the entrance is gone
+          p.onGround = false;
+          p.gobj = null;
+          p.slopeK = 0;
+          // a flying corridor moves along when the exit lies outside it (single player only)
+          const b = this.bnd;
+          if (b.ceil != null && !this.p2) {
+            const hw = this.hw();
+            if (p.y - hw < b.floor || p.y + hw > b.ceil) {
+              const H = b.ceil - b.floor;
+              let fl = Math.max(0, Math.round((p.y - H / 2) / 30) * 30);
+              if (p.y - H / 2 < 45) fl = 0;
+              b.floor = fl;
+              b.ceil = fl + H;
+            }
+          }
           this.ev('tele', { fx, fy, tx: p.x, ty: p.y, obj: o.id, to: t.id });
           break;
         }

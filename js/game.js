@@ -128,13 +128,14 @@
     restart() {
       this.checkpoints = [];
       this.attempt++;
-      // a death was already counted as an attempt
-      if (this.state !== 'dead') this.saveAttempt();
+      // a death or a finished run was already counted as an attempt
+      if (this.state === 'play') this.saveAttempt();
       this.startAttempt(false);
       if (this.practice) this.playMusic();
     }
 
     saveAttempt() {
+      if (this.opts.test) return;
       const rec = this.record();
       if (rec) {
         rec.att = (rec.att || 0) + 1;
@@ -183,6 +184,7 @@
         if (!this.shownComplete && this.doneT > 1.6) {
           this.shownComplete = true;
           this.app.showComplete(this);
+          if (this.opts.test) return; // the editor took over (and reset the renderer)
         }
       }
       // mirror portal: squeeze the screen through 0 to -1 like the original
@@ -208,7 +210,7 @@
       for (let i = a; i < b && n < 14; i++) {
         const o = w.rlist[i];
         if (o.kind !== 'portal' && o.kind !== 'pad') continue;
-        if (o.g && w.hidden[o.g]) continue;
+        if (o.g && (w.hidden[o.g] || (w.alpha[o.g] != null && w.alpha[o.g] <= 0.01))) continue; // invisible stays invisible
         const ox = o.x + o.ox, oy = o.y + o.oy, c = o.def.c || '#fff';
         if (o.kind === 'portal') {
           const ang = Math.random() * Math.PI * 2;
@@ -273,6 +275,7 @@
       for (const e of ev) {
         switch (e.type) {
           case 'jump':
+            if (this.opts.test) break;
             this.sessionJumps++;
             this.app.save.stats.jumps++;
             break;
@@ -285,7 +288,7 @@
           }
           case 'pad': {
             const o = w.objs[e.obj];
-            for (let i = 0; i < 10; i++) r.spawn(o.x + (Math.random() - 0.5) * 22, o.y - 12 * (o.r === 180 ? -1 : 1), (Math.random() - 0.5) * 40, (o.r === 180 ? -1 : 1) * (120 + Math.random() * 120), 0.45, 3, o.def.c, { shape: 'ci', add: true });
+            for (let i = 0; i < 10; i++) r.spawn(o.x + o.ox + (Math.random() - 0.5) * 22, o.y + o.oy - 12 * (o.r === 180 ? -1 : 1), (Math.random() - 0.5) * 40, (o.r === 180 ? -1 : 1) * (120 + Math.random() * 120), 0.45, 3, o.def.c, { shape: 'ci', add: true });
             this.streakT = 0.45;
             break;
           }
@@ -298,10 +301,11 @@
           }
           case 'coin': {
             const o = w.objs[e.obj];
+            const cx = o.x + o.ox, cy = o.y + o.oy;
             GD.Audio.sfx('coin');
-            r.ring(o.x, o.y, 8, 40, 0.5, '#ffd84a', 3);
-            r.burst(o.x, o.y, 16, '#ffe680', 180, 0.6, 4, { shape: 'ci', add: true });
-            for (let i = 0; i < 6; i++) r.spawn(o.x, o.y, (Math.random() - 0.5) * 30, 160 + i * 20, 0.8, 7 - i, '#ffd23a', { shape: 'ci' });
+            r.ring(cx, cy, 8, 40, 0.5, '#ffd84a', 3);
+            r.burst(cx, cy, 16, '#ffe680', 180, 0.6, 4, { shape: 'ci', add: true });
+            for (let i = 0; i < 6; i++) r.spawn(cx, cy, (Math.random() - 0.5) * 30, 160 + i * 20, 0.8, 7 - i, '#ffd23a', { shape: 'ci' });
             break;
           }
           case 'tele': {
@@ -321,16 +325,16 @@
             }
             break;
           case 'death':
-            this.deathFx();
+            this.deathFx(e.x, e.y); // the event knows which player (dual) crashed
             break;
         }
       }
       ev.length = 0;
     }
 
-    deathFx() {
+    deathFx(ex, ey) {
       const p = this.world.p, r = this.r, ic = this.iconCols();
-      const x = p.x, y = p.y, c1 = ic.c1, c2 = ic.c2;
+      const x = ex == null ? p.x : ex, y = ey == null ? p.y : ey, c1 = ic.c1, c2 = ic.c2;
       const R = Math.random;
       switch (ic.death || 0) {
         case 1: // shatter: big pieces that fall down
@@ -502,6 +506,8 @@
       if (rec && !this.opts.test) {
         rec.jumps = (rec.jumps || 0) + this.sessionJumps;
         this.sessionJumps = 0;
+        rec.att = (rec.att || 0) + 1;
+        this.app.save.stats.attempts++;
         if (this.practice) { rec.pbest = 100; this.app.save.stats.practiceDone = true; }
         else {
           if ((rec.best || 0) < 100) this.result.newBest = true;
@@ -541,7 +547,7 @@
     render() {
       const r = this.r, w = this.world, p = w.p;
       const cam = { x: this.cam.x, y: this.cam.y };
-      if (w.shakeFx) {
+      if (w.shakeFx && this.state === 'play') {
         const k = 1 - w.shakeFx.t / w.shakeFx.d;
         cam.x += (Math.random() - 0.5) * w.shakeFx.s * k;
         cam.y += (Math.random() - 0.5) * w.shakeFx.s * k;
@@ -630,15 +636,21 @@
         const a = r.sx(x0), b = r.sx(x1);
         ctx.strokeRect(Math.min(a, b), r.sy(y1), Math.abs(b - a), (y1 - y0) * r.S);
       };
-      ctx.strokeStyle = '#ff3030';
-      box(this.rx - hw, this.ry - hw, this.rx + hw, this.ry + hw);
-      ctx.strokeStyle = '#3080ff';
       const ih = hw * 0.3;
-      box(this.rx - ih, this.ry - ih, this.rx + ih, this.ry + ih);
+      const ys = w.p2 ? [this.ry, this.ry2] : [this.ry];
+      for (const y of ys) {
+        ctx.strokeStyle = '#ff3030';
+        box(this.rx - hw, y - hw, this.rx + hw, y + hw);
+        ctx.strokeStyle = '#3080ff';
+        box(this.rx - ih, y - ih, this.rx + ih, y + ih);
+      }
+      // same object set the collision code uses: no toggled-off groups, moved objects at their new place
       const [a, b] = r.visibleRange(w.rlist, r.cam, 60);
-      for (let i = a; i < b; i++) {
-        const o = w.rlist[i];
-        if (!o.lh) continue;
+      const list = [];
+      for (let i = a; i < b; i++) if (!w.rlist[i].dyn) list.push(w.rlist[i]);
+      for (const o of w.dynAll) if (o.x + o.ox > r.cam.x - 90 && o.x + o.ox < r.cam.x + r.VW + 90) list.push(o);
+      for (const o of list) {
+        if (!o.lh || (o.g && w.hidden[o.g])) continue;
         ctx.strokeStyle = o.kind === 'hazard' ? '#ff3030' : o.kind === 'solid' ? '#3080ff' : '#30ff60';
         if (o.sl) {
           ctx.beginPath();

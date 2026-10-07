@@ -164,9 +164,7 @@
       // complete
       $('c-replay').addEventListener('click', () => {
         $('o-complete').classList.add('hidden');
-        const g = app.game;
-        g.state = 'play';
-        g.restart();
+        app.game.restart();
       });
       $('c-menu').addEventListener('click', () => { $('o-complete').classList.add('hidden'); app.exitGame(); });
       // creator
@@ -174,7 +172,9 @@
       $('cr-import').addEventListener('click', () => { this.click(); this.importLevel(); });
       // icon kit
       $('kit-glow').addEventListener('change', () => { app.save.icons.glow = $('kit-glow').checked; app.persist(); this.renderKit(); });
-      $('o-dialog').addEventListener('pointerdown', (e) => { if (e.target === $('o-dialog') && this.dlgCancelable) this.closeDialog(); });
+      $('o-dialog').addEventListener('pointerdown', (e) => {
+        if (e.target === $('o-dialog') && this.dlgCancelable && performance.now() - (this.dlgOpenT || 0) > 400) this.closeDialog();
+      });
       this.page = U.store.get('gdweb.page', 0) || 0;
     },
 
@@ -518,6 +518,7 @@
         mk('Share', 'pink', () => this.shareLevel(ul));
         mk('✖', 'red', () => this.confirm('Delete level', `Delete "<b>${esc(ul.name)}</b>"? This cannot be undone.`, () => {
           this.app.userLevels = this.app.userLevels.filter((x) => x !== ul);
+          this.app.deletedIds.add(ul.id);
           delete this.app.save.levels[ul.id];
           this.app.persistUser();
           this.app.persist();
@@ -575,15 +576,17 @@
 
     /** Add a decoded level to "Your Levels" (or return the copy imported earlier from the same code). */
     addImported(lvl) {
-      const src = U.hashStr(JSON.stringify([lvl.name || '', lvl.objects || []]));
-      const old = this.app.userLevels.find((l) => l.src === src);
-      if (old) return old;
+      lvl = GD.sanitizeLevel(lvl);
       const ul = {
         id: 'u_' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36),
-        name: (lvl.name || 'Imported').slice(0, 40), settings: Object.assign({}, GD.DEFAULT_SETTINGS, lvl.settings || {}),
-        objects: lvl.objects || [], created: Date.now(), updated: Date.now(), verified: false,
+        name: lvl.name || 'Imported', settings: lvl.settings, objects: lvl.objects,
+        created: Date.now(), updated: Date.now(), verified: false,
       };
-      ul.src = src;
+      // reuse a copy only while its content is still exactly the shared level (settings included)
+      const key = (l) => JSON.stringify([l.name, l.settings, l.objects]);
+      const k = key(ul);
+      const old = this.app.userLevels.find((l) => key(l) === k);
+      if (old) return old;
       this.app.userLevels.push(ul);
       this.app.persistUser();
       return ul;
@@ -629,6 +632,7 @@
 
     // -------------------------------------------------------------- dialogs
     dialog(title, html, buttons, cancelable) {
+      this.dlgOpenT = performance.now();
       $('d-title').textContent = title;
       const body = $('d-body');
       if (typeof html === 'string') body.innerHTML = html;
@@ -750,7 +754,7 @@
         'I s-s-see a gl-gl-glitch...',
         'Nope.', 'Try again.', 'Are you even trying?', 'That is not it.', 'Wrong!',
       ];
-      const found = () => Object.keys(CODES).filter((k) => app.save.vault[k]).length;
+      const found = () => Object.values(CODES).filter((c) => app.save.vault[c.unlock]).length;
       let tries = 0;
       this.dialog('The Vault', `<p class="vault-msg" id="vault-msg">${HINTS[0]}</p>
         <input type="text" id="vault-in" maxlength="30" placeholder="Enter a code..." autocomplete="off" />

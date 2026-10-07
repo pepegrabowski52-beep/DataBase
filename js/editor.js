@@ -9,7 +9,13 @@
   GD.encodeLevel = function (ul) {
     const objs = ul.objects.map((o) => {
       const c = Object.assign({}, o);
-      for (const k of Object.keys(c)) if (c[k] === 0 && k !== 'x' && k !== 'y' && k !== 'a' && k !== 'dx' && k !== 'dy') delete c[k];
+      // drop zeros to keep codes short, but only where 0 is also the default (a Move time of 0 must stay 0)
+      const p = (OBJ[c.t] && OBJ[c.t].props) || {};
+      for (const k of Object.keys(c)) {
+        if (c[k] !== 0 || k === 'x' || k === 'y' || k === 'a' || k === 'dx' || k === 'dy') continue;
+        if (p[k] != null && p[k] !== 0) continue;
+        delete c[k];
+      }
       return c;
     });
     return 'GDW1:' + U.b64enc(JSON.stringify({ name: ul.name, settings: ul.settings, objects: objs }));
@@ -35,11 +41,55 @@
       const json = txt.startsWith('GDW1:') ? U.b64dec(txt.slice(5).replace(/\s+/g, '')) : txt;
       const o = JSON.parse(json);
       if (!o || !Array.isArray(o.objects)) return null;
-      o.objects = o.objects.filter((x) => x && OBJ[x.t] && isFinite(x.x) && isFinite(x.y));
-      return o;
+      return GD.sanitizeLevel(o);
     } catch (e) {
       return null;
     }
+  };
+
+  // ---------------------------------------------------------------- untrusted level data
+  // Level codes and links come from other people: keep only known keys with values of the right type,
+  // so nothing can end up as HTML or break the renderer (e.g. an object type 'constructor').
+  const HEX = /^#[0-9a-f]{6}$/i;
+  const EASES = ['linear', 'inOut', 'in', 'out', 'elastic', 'bounce'];
+  const NUM_KEYS = ['x', 'y', 'r', 'g', 's', 'z', 'd', 'fi', 'h', 'fo', 'grp', 'dx', 'dy', 'a', 'spd'];
+  const BOOL_KEYS = ['fx', 'fy', 'on', 'mini', 'flip'];
+  const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  GD.sanitizeObject = function (x) {
+    if (!x || typeof x !== 'object' || typeof x.t !== 'string' || !own(OBJ, x.t)) return null;
+    const o = { t: x.t };
+    for (const k of NUM_KEYS) if (own(x, k)) { const n = +x[k]; if (isFinite(n)) o[k] = n; }
+    for (const k of BOOL_KEYS) if (own(x, k)) o[k] = !!x[k];
+    if (typeof x.col === 'string' && HEX.test(x.col)) o.col = x.col;
+    if (GD.CHANNELS.includes(x.ch)) o.ch = x.ch;
+    if (GD.CHANNELS.includes(x.c)) o.c = x.c;
+    if (EASES.includes(x.e)) o.e = x.e;
+    if (GD.MODES.includes(x.mode)) o.mode = x.mode;
+    if (!isFinite(o.x) || !isFinite(o.y)) return null;
+    return o;
+  };
+  GD.sanitizeSettings = function (s) {
+    const d = GD.DEFAULT_SETTINGS, out = Object.assign({}, d);
+    if (!s || typeof s !== 'object') return out;
+    for (const k of Object.keys(d)) {
+      if (!own(s, k)) continue;
+      const v = s[k], dv = d[k];
+      if (typeof dv === 'string' && dv[0] === '#') { if (typeof v === 'string' && HEX.test(v)) out[k] = v; }
+      else if (k === 'mode') { if (GD.MODES.includes(v)) out[k] = v; }
+      else if (k === 'song') { if (typeof v === 'string' && (!GD.SONGS || own(GD.SONGS, v))) out[k] = v; }
+      else if (k === 'bgStyle') { if (GD.BG_STYLES.includes(v)) out[k] = v; }
+      else if (k === 'gStyle') { if (GD.G_STYLES.includes(v)) out[k] = v; }
+      else if (typeof dv === 'boolean') out[k] = !!v;
+      else if (typeof dv === 'number') { const n = +v; if (isFinite(n)) out[k] = n; }
+    }
+    return out;
+  };
+  GD.sanitizeLevel = function (o) {
+    return {
+      name: String(o.name == null ? 'Imported' : o.name).slice(0, 40),
+      settings: GD.sanitizeSettings(o.settings),
+      objects: (Array.isArray(o.objects) ? o.objects : []).map(GD.sanitizeObject).filter(Boolean),
+    };
   };
 
   const ZOOMS = [0.35, 0.5, 0.65, 0.8, 1, 1.25, 1.6, 2];
@@ -119,7 +169,7 @@
       const btn = (parent, html, title, fn, cls) => {
         const b = el('button', 'ebtn ' + (cls || ''), html);
         b.title = title;
-        b.addEventListener('click', (e) => { e.stopPropagation(); GD.Audio.sfx('click'); fn(); });
+        b.addEventListener('click', (e) => { e.stopPropagation(); b.blur(); GD.Audio.sfx('click'); fn(); });
         parent.appendChild(b);
         return b;
       };
@@ -279,7 +329,14 @@
       this.objs = JSON.parse(this.undoStack.pop());
       this.sel.clear();
       this.dirty = true;
+      this.modSinceVerify = true;
       this.refreshInfo();
+    }
+    /** Record an undo step (keeps at most 120). */
+    recordUndo(before) {
+      this.undoStack.push(before);
+      if (this.undoStack.length > 120) this.undoStack.shift();
+      this.redoStack.length = 0;
     }
     redo() {
       if (!this.redoStack.length) return;
@@ -287,6 +344,7 @@
       this.objs = JSON.parse(this.redoStack.pop());
       this.sel.clear();
       this.dirty = true;
+      this.modSinceVerify = true;
       this.refreshInfo();
     }
 
@@ -301,7 +359,6 @@
       const gx = Math.floor(wx / 30), gy = Math.floor(wy / 30);
       if (gy < 0 || gy > 300) return false;
       const x = gx * 30 + 15, y = gy * 30 + 15;
-      if (this.objs.some((o) => o.t === this.tool && o.x === x && o.y === y && (o.r || 0) === this.buildRot)) return false;
       const d = OBJ[this.tool];
       const o = { t: this.tool, x, y };
       if (d.slope) {
@@ -310,12 +367,21 @@
         if (i === 2 || i === 3) o.fy = true;
         if (d.slope.w > 30) o.x += 15;
       } else if (this.buildRot) o.r = this.buildRot;
+      if (this.objs.some((q) => q.t === o.t && q.x === o.x && q.y === o.y && (q.r || 0) === (o.r || 0) && !!q.fx === !!o.fx && !!q.fy === !!o.fy)) return false;
       if (d.props) Object.assign(o, JSON.parse(JSON.stringify(d.props)));
       this.objs.push(o);
       this.sel = new Set([o]);
       this.dirty = true;
       this.modSinceVerify = true;
       return true;
+    }
+
+    /** Build or delete at a point as one undo step. */
+    applyAt(kind, wx, wy) {
+      const before = JSON.stringify(this.objs);
+      const ok = kind === 'build' ? this.place(wx, wy) : this.deleteAt(wx, wy);
+      if (ok) { this.recordUndo(before); this.refreshInfo(); }
+      return ok;
     }
 
     pick(wx, wy) {
@@ -435,21 +501,21 @@
       const single = list.length === 1;
       const chOpts = (cur) => GD.CHANNELS.map((c) => `<option value="${c}" ${c === cur ? 'selected' : ''}>${GD.CHANNEL_NAMES[c]}</option>`).join('');
       let html = '<div class="form-grid">';
-      html += `<label>Group ID</label><input type="number" id="ep-g" min="0" max="999" value="${first.g || 0}">`;
+      html += `<label>Group ID</label><input type="number" id="ep-g" min="0" max="999" value="${U.esc(first.g || 0)}">`;
       if (d.col !== 'none' || first.c) html += `<label>Color channel</label><select id="ep-c">${chOpts(first.c || d.col)}</select>`;
       html += `<label>Front layer</label><input type="checkbox" id="ep-z" ${first.z > 0 ? 'checked' : ''} style="width:24px;height:24px">`;
       const tr = single && d.kind === 'trigger' ? first.t : null;
-      const num = (id, label, v, step) => `<label>${label}</label><input type="number" id="${id}" step="${step || 0.1}" value="${v}">`;
+      const num = (id, label, v, step) => `<label>${label}</label><input type="number" id="${id}" step="${step || 0.1}" value="${U.esc(v)}">`;
       if (tr === 'tColor' || tr === 'tPulse') {
         html += `<label>Target channel</label><select id="ep-ch">${chOpts(first.ch)}</select>`;
-        html += `<label>Color</label><input type="color" id="ep-col" value="${first.col}">`;
+        html += `<label>Color</label><input type="color" id="ep-col" value="${U.esc(first.col)}">`;
       }
       if (tr === 'tColor') html += num('ep-d', 'Fade time (s)', first.d);
       if (tr === 'tPulse') html += num('ep-fi', 'Fade in (s)', first.fi, 0.05) + num('ep-h', 'Hold (s)', first.h, 0.05) + num('ep-fo', 'Fade out (s)', first.fo, 0.05);
       if (tr === 'tMove' || tr === 'tAlpha' || tr === 'tToggle') html += num('ep-grp', 'Target group', first.grp, 1);
       if (tr === 'tMove') {
         html += num('ep-dx', 'Move X (blocks)', first.dx, 0.5) + num('ep-dy', 'Move Y (blocks)', first.dy, 0.5) + num('ep-d', 'Time (s)', first.d);
-        html += `<label>Easing</label><select id="ep-e">${['linear', 'inOut', 'in', 'out', 'elastic', 'bounce'].map((e) => `<option ${e === first.e ? 'selected' : ''}>${e}</option>`).join('')}</select>`;
+        html += `<label>Easing</label><select id="ep-e">${['linear', 'inOut', 'in', 'out', 'elastic', 'bounce'].map((e) => `<option ${e === first.e ? 'selected' : ''}>${U.esc(e)}</option>`).join('')}</select>`;
       }
       if (tr === 'tAlpha') html += num('ep-a', 'Opacity (0-1)', first.a) + num('ep-d', 'Time (s)', first.d);
       if (tr === 'tToggle') html += `<label>Turn group</label><select id="ep-on"><option value="1" ${first.on ? 'selected' : ''}>On</option><option value="0" ${!first.on ? 'selected' : ''}>Off</option></select>`;
@@ -498,10 +564,10 @@
 
     levelSettings() {
       const s = this.settings;
-      const cols = GD.CHANNELS.map((c) => `<label>${GD.CHANNEL_NAMES[c]}</label><input type="color" id="ls-${c}" value="${s[c]}">`).join('');
-      const songs = GD.SONG_LIST.map((id) => `<option value="${id}" ${id === s.song ? 'selected' : ''}>${GD.SONGS[id].name}</option>`).join('');
+      const cols = GD.CHANNELS.map((c) => `<label>${GD.CHANNEL_NAMES[c]}</label><input type="color" id="ls-${c}" value="${U.esc(s[c])}">`).join('');
+      const songs = GD.SONG_LIST.map((id) => `<option value="${U.esc(id)}" ${id === s.song ? 'selected' : ''}>${U.esc(GD.SONGS[id].name)}</option>`).join('');
       const html = `<div class="form-grid">
-        <label>Name</label><input type="text" id="ls-name" maxlength="40" value="${String(this.ul.name).replace(/"/g, '&quot;')}">
+        <label>Name</label><input type="text" id="ls-name" maxlength="40" value="${U.esc(this.ul.name)}">
         <label>Song</label><div style="display:flex;gap:8px"><select id="ls-song">${songs}</select><button class="gbtn small blue" id="ls-prev" type="button">▶</button></div>
         <label>Background</label><select id="ls-bg">${GD.BG_STYLES.map((b) => `<option ${b === (s.bgStyle || 'squares') ? 'selected' : ''}>${b}</option>`).join('')}</select>
         <label>Ground</label><select id="ls-gs">${GD.G_STYLES.map((b) => `<option ${b === (s.gStyle || 'squares') ? 'selected' : ''}>${b}</option>`).join('')}</select>
@@ -543,9 +609,10 @@
       this.ul.settings = Object.assign({}, this.settings);
       this.ul.updated = Date.now();
       if (this.modSinceVerify) this.ul.verified = false;
-      this.app.persistUser();
+      if (!this.app.persistUser()) return false; // persistUser already showed the error
       this.dirty = false;
       if (!silent) GD.UI.toast('Saved!');
+      return true;
     }
 
     exitMenu() {
@@ -596,8 +663,7 @@
         if (!this.usedStart) {
           this.ul.verified = true;
           this.modSinceVerify = false;
-          this.save(true);
-          GD.UI.toast('Level verified! ✔');
+          if (this.save(true)) GD.UI.toast('Level verified! ✔');
         } else GD.UI.toast('Completed (from a start position — not verified)');
       }
       this.refreshInfo();
@@ -610,7 +676,7 @@
         return;
       }
       const ctrl = e.ctrlKey || e.metaKey;
-      this.keys.add(e.code);
+      if (!ctrl) this.keys.add(e.code);
       if (ctrl && e.code === 'KeyZ') { e.preventDefault(); if (e.shiftKey) this.redo(); else this.undo(); return; }
       if (ctrl && e.code === 'KeyY') { e.preventDefault(); this.redo(); return; }
       if (ctrl && e.code === 'KeyC') { this.copy(); return; }
@@ -677,17 +743,11 @@
           this.drag = { kind: 'pan', px: p.px, py: p.py, cx: this.cam.x, cy: this.cam.y };
           return;
         }
-        if (this.mode === 'build') {
-          const before = JSON.stringify(this.objs);
-          if (this.place(p.wx, p.wy)) {
-            this.undoStack.push(before);
-            this.redoStack.length = 0;
-          }
-          this.drag = { kind: 'build', cell: Math.floor(p.wx / 30) + ',' + Math.floor(p.wy / 30), sx: p.px, sy: p.py, panned: false, cx: this.cam.x, cy: this.cam.y };
-        } else if (this.mode === 'delete') {
-          const before = JSON.stringify(this.objs);
-          if (this.deleteAt(p.wx, p.wy)) { this.undoStack.push(before); this.redoStack.length = 0; }
-          this.drag = { kind: 'delete', sx: p.px, sy: p.py, cx: this.cam.x, cy: this.cam.y };
+        if (this.mode === 'build' || this.mode === 'delete') {
+          // on touch without swipe a tap builds / deletes when the finger lifts, a drag pans instead
+          const defer = e.pointerType !== 'mouse' && !this.swipe;
+          this.drag = { kind: this.mode, cell: Math.floor(p.wx / 30) + ',' + Math.floor(p.wy / 30), sx: p.px, sy: p.py, wx: p.wx, wy: p.wy, panned: false, defer, cx: this.cam.x, cy: this.cam.y };
+          if (!defer) this.applyAt(this.mode, p.wx, p.wy);
         } else {
           const o = this.pick(p.wx, p.wy);
           if (o) {
@@ -736,9 +796,10 @@
             }
             return;
           }
-          const before = JSON.stringify(this.objs);
-          const ok = d.kind === 'build' ? this.place(p.wx, p.wy) : this.deleteAt(p.wx, p.wy);
-          if (ok) { this.undoStack.push(before); this.redoStack.length = 0; this.refreshInfo(); }
+          const cell = Math.floor(p.wx / 30) + ',' + Math.floor(p.wy / 30);
+          if (cell === d.cell) return;
+          d.cell = cell;
+          this.applyAt(d.kind, p.wx, p.wy);
           return;
         }
         if (d.kind === 'move') {
@@ -755,6 +816,7 @@
       } else if (type === 'up') {
         this.pointers.delete(e.pointerId);
         const d = this.drag;
+        if (d && d.defer && !d.panned && e.type !== 'pointercancel' && this.pointers.size === 0) this.applyAt(d.kind, d.wx, d.wy);
         if (d && d.kind === 'box') {
           const x0 = Math.min(d.x0, d.x1), x1 = Math.max(d.x0, d.x1), y0 = Math.min(d.y0, d.y1), y1 = Math.max(d.y0, d.y1);
           if (x1 - x0 > 4 || y1 - y0 > 4) for (const o of this.objs) if (o.x >= x0 && o.x <= x1 && o.y >= y0 && o.y <= y1) this.sel.add(o);
@@ -768,8 +830,9 @@
     update(dt) {
       this.time += dt;
       if (this.test) {
-        this.test.update(dt);
         const t = this.test;
+        t.update(dt);
+        if (!this.test) { this.r.m = 1; return; } // the run finished and handed control back
         if (t.state === 'play') {
           const last = this.testPath[this.testPath.length - 1];
           if (!last || t.world.p.x - last[0] > 6) this.testPath.push([t.world.p.x, t.world.p.y]);
@@ -778,8 +841,9 @@
       }
       // keyboard panning while held
       const sp = 600 * dt;
-      if (this.keys.has('KeyA') && !this.keys.has('ControlLeft')) this.cam.x -= sp;
-      if (this.keys.has('KeyD') && !this.keys.has('ControlLeft')) this.cam.x += sp;
+      const mod = ['ControlLeft', 'ControlRight', 'MetaLeft', 'MetaRight', 'AltLeft', 'AltRight'].some((k) => this.keys.has(k));
+      if (this.keys.has('KeyA') && !mod) this.cam.x -= sp;
+      if (this.keys.has('KeyD') && !mod) this.cam.x += sp;
       this.clampCam();
     }
 
@@ -814,7 +878,7 @@
         if (o.x < x0 || o.x > x1) continue;
         const d = OBJ[o.t];
         if (o.z > 0) { fronts.push(o); continue; }
-        r.drawObject(o, d, cols, this.time, 0, 1, false);
+        r.drawObject(d.kind === 'trigger' && o.s ? Object.assign({}, o, { s: 1 }) : o, d, cols, this.time, 0, 1, false);
       }
       for (const o of fronts) r.drawObject(o, OBJ[o.t], cols, this.time, 0, 1, false);
       r.drawGround(cols, cam, 0, false, 0, this.settings.gStyle);
