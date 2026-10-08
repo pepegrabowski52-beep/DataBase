@@ -626,6 +626,7 @@
       if (this.info.endless) {
         // endless: the score is the distance in blocks
         const dist = Math.floor(w.p.x / 30);
+        this.deadDist = dist;
         const e = (this.app.save.endless = this.app.save.endless || { best: 0, runs: 0 });
         e.runs++;
         if (dist > e.best) { e.best = dist; this.newBest = dist; this.newBestT = this.time; }
@@ -770,6 +771,10 @@
       if (this.newBest != null && this.time - this.newBestT < 1.2 && this.state === 'dead') {
         r.text(this.newBest + (this.info.endless ? ' m' : '%'), r.W / 2, r.H * 0.42, r.hs * 34, { gold: true, alpha: 1 - (this.time - this.newBestT) / 1.4 });
         r.text('NEW BEST!', r.W / 2, r.H * 0.42 - r.hs * 30, r.hs * 18, { alpha: 1 - (this.time - this.newBestT) / 1.4 });
+      } else if (this.gen && this.state === 'dead' && this.deadDist != null) {
+        const a = U.clamp(1.4 - this.deadT * 1.3, 0, 1);
+        r.text(this.deadDist + ' m', r.W / 2, r.H * 0.42, r.hs * 30 * (0.8 + 0.2 * U.ease.out(U.clamp(this.deadT / 0.25, 0, 1))), { alpha: a });
+        r.text('Stage ' + (this.stage + 1), r.W / 2, r.H * 0.42 + r.hs * 26, r.hs * 12, { alpha: a * 0.9 });
       }
       if (this.info.endless) this.drawEndlessHud();
       else r.progressBar(w.progress(), this.settings.showBar, this.settings.showPct);
