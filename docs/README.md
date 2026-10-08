@@ -13,11 +13,22 @@ Alles steckt in einer einzigen Datei (`index.html`), es gibt nichts zu installie
 
 Warenkorb, Merkzettel und eigene Artikel werden im Browser des Geräts gespeichert.
 
-## Online stellen (optional)
+## Online stellen (nötig für die App)
 
-Damit die App-Installation mit Offline-Modus funktioniert, muss die Seite über `https` erreichbar sein.
-Am einfachsten mit GitHub Pages: im Repository unter **Settings → Pages** als Quelle den Branch und den
-Ordner `/docs` wählen und speichern. Nach etwa einer Minute ist der Shop unter der angezeigten Adresse online.
+Die App lässt sich nur installieren, wenn der Shop unter einer eigenen `https`-Adresse läuft.
+In der Claude-Vorschau oder als lokal geöffnete Datei geht das nicht.
+
+Mit GitHub Pages (kostenlos):
+
+1. Auf github.com das Repository öffnen und **Settings** antippen.
+2. Links **Pages** wählen.
+3. Bei **Branch** den Branch mit dem Shop und den Ordner **/docs** wählen, dann **Save**.
+4. Nach ein bis zwei Minuten ist der Shop online unter
+   `https://pepegrabowski52-beep.github.io/DataBase/`.
+
+Dort installiert „App laden“ die App auf Android und am Computer mit einem Tipp.
+Auf iPad und iPhone erlaubt Apple keinen Ein-Tipp-Download. Dort zeigt die Seite die drei Schritte
+über **Teilen → Zum Home-Bildschirm**.
 
 ## Dateien
 

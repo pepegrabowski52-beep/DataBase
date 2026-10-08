@@ -387,6 +387,10 @@ legend{font:800 18px/1.2 var(--f-display);margin-bottom:10px;padding:0}
 .install-hero img,.install-hero svg.appicon{width:60px;height:60px;border-radius:14px;flex:none}
 .install-hero b{display:block;font-size:17px}
 .install-hero span{color:var(--ink-soft);font-size:14px}
+.away{display:grid;gap:12px;margin:14px 0 20px;padding:16px 18px;border-radius:16px;background:color-mix(in oklab,var(--accent) 18%,var(--surface));box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--accent) 55%,transparent)}
+.away .btn{justify-self:start}
+.away .addr{font-size:14px;color:var(--ink-soft);word-break:break-all}
+.away .addr b{color:var(--ink);user-select:all}
 
 /* Toast */
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:50;transform:translateX(-50%);display:flex;align-items:center;gap:14px;width:max-content;max-width:calc(100% - 32px);padding:12px 12px 12px 18px;border-radius:14px;background:var(--ink);color:var(--bg);box-shadow:var(--shadow);font-weight:600;font-size:15px}
@@ -650,6 +654,12 @@ legend{font:800 18px/1.2 var(--f-display);margin-bottom:10px;padding:0}
       <svg class="appicon" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#1E4B3E"/><path d="M146 194h220l-17.6 167.2a24 24 0 0 1-23.9 21.5H187.5a24 24 0 0 1-23.9-21.5z" fill="#F0B429"/><path d="M206 194v-22a50 50 0 0 1 100 0v22" fill="none" stroke="#F4F6F2" stroke-width="26" stroke-linecap="round"/></svg>
       <div><b>Fundus</b><span>Kostenlos · unter 1 MB · kein App Store nötig</span></div>
     </div>
+    <div class="away" id="inAway" hidden>
+      <p><b>Hier in der Vorschau lässt sich die App nicht installieren.</b> Öffne den Shop unter seiner eigenen Adresse. Dort klappt „App installieren“.</p>
+      <a class="btn dark" href="https://pepegrabowski52-beep.github.io/DataBase/" target="_blank" rel="noopener"><i data-ic="share"></i>Shop im Browser öffnen</a>
+      <p class="addr">Adresse: <b>pepegrabowski52-beep.github.io/DataBase</b></p>
+    </div>
+    <p class="lbl" id="inThen" hidden>Danach auf deinem Gerät:</p>
     <div class="tabs" role="tablist" aria-label="Gerät wählen">
       <button type="button" role="tab" id="tab-ios" aria-controls="pane-ios" aria-selected="true">iPad &amp; iPhone</button>
       <button type="button" role="tab" id="tab-android" aria-controls="pane-android" aria-selected="false" tabindex="-1">Android</button>
@@ -1144,6 +1154,11 @@ $('#sellForm').addEventListener('submit', e => {
 
 /* ---------- App-Installation ---------- */
 let deferredPrompt = null;
+// In der Claude-Vorschau (eingebettet) oder als lokale Datei kann sich die Seite nicht als App installieren.
+const notInstallableHere = (() => {
+  if (!/^https?:$/.test(location.protocol)) return true;
+  try { return window.self !== window.top; } catch (e) { return true; }
+})();
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 function platform() {
   const ua = navigator.userAgent;
@@ -1164,7 +1179,8 @@ function updateInstallUI() {
   $('#appBtn').hidden = sa;
   $('#installState').innerHTML = sa
     ? `${ic('check')}Du nutzt Fundus gerade als App.`
-    : deferredPrompt ? `${ic('check')}Bereit zur Installation auf diesem Gerät.` : '';
+    : deferredPrompt ? `${ic('check')}Bereit zur Installation auf diesem Gerät.`
+    : notInstallableHere ? 'Zum Installieren den Shop im Browser öffnen.' : '';
 }
 async function install() {
   if (isStandalone()) { toast('Du nutzt Fundus bereits als App.'); return; }
@@ -1176,6 +1192,8 @@ async function install() {
     updateInstallUI();
     return;
   }
+  $('#inAway').hidden = !notInstallableHere;
+  $('#inThen').hidden = !notInstallableHere;
   selectTab(platform());
   closeAll();
   openDlg($('#dlgInstall'));
