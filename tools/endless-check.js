@@ -60,11 +60,12 @@ for (const c of merge ? [] : GD.ENDLESS_CHUNKS) {
     const seeds = c.seeded ? GD.ENDLESS_SEEDS : [0];
     const good = [], bad = {};
     for (const seed of seeds) {
-      const res = check(c.make(seed), sp, !!c.seeded);
+      const res = check(c.make(seed, sp), sp, !!c.seeded);
       if (res === 'ok') good.push(seed);
       else bad[res] = (bad[res] || 0) + 1;
     }
     if (good.length) ok[c.id + '@' + sp] = good;
+    if (outJson) fs.writeFileSync(outJson, JSON.stringify(ok)); // keep partial results of long runs
     console.log(`${good.length ? '✓' : '✗'} ${c.id}@${sp}x: ${good.length}/${seeds.length} ok ${Object.keys(bad).length ? JSON.stringify(bad) : ''}`);
   }
 }

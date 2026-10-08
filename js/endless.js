@@ -12,7 +12,8 @@
   const SEEDS = Array.from({ length: 16 }, (_, i) => 1000 + i * 37);
 
   // ---------------------------------------------------------------- chunk catalogue
-  // tiers: [first, last] difficulty tier; speeds: speeds the chunk is tried at; seeded: generator chunk
+  // tiers: [first, last] difficulty tier; speeds: speeds the chunk is tried at; seeded: generator chunk;
+  // make(seed, speed) returns the map entries (some chunks adapt their spacing to the speed)
   const CHUNKS = [
     // cube
     { id: 'spike1', tiers: [0, 4], speeds: [1, 2, 3, 4], make: () => ['^'] },
@@ -34,6 +35,16 @@
     { id: 'hill', tiers: [0, 4], speeds: [1, 2, 3, 4], make: () => ['........^.........\n....(-######-)....'] },
     { id: 'towers', tiers: [2, 4], speeds: [1, 2, 3, 4], make: () => ['.....##......##....\n..^^^##^^^^^^##^^^.'] },
     { id: 'dashpit', tiers: [1, 4], speeds: [1, 2, 3, 4], make: () => ['.......................\n.......................\n..d....................\n.................####..\n..^^^^^^^^^^^^^^^^^^^^^'] },
+    { id: 'orbchain', tiers: [2, 4], speeds: [1, 2, 3, 4],
+      make: (seed, sp) => {
+        const d = [4, 4, 5, 6, 7][sp], n = 4, len = 2 + n * d + 2;
+        const orbs = Array.from({ length: len }, (_, i) => (i >= 2 && (i - 2) % d === 0 && (i - 2) / d < n ? 'o' : '.')).join('');
+        return [[orbs, '.'.repeat(len), '.' + '^'.repeat(len - 3) + '..'].join('\n')];
+      } },
+    { id: 'gravrun', tiers: [2, 4], speeds: [1, 2, 3, 4],
+      make: () => [['...########################...', '..........v.........vv....N...', '..............................', '..............................', '.G............................'].join('\n')] },
+    { id: 'spikesteps', tiers: [1, 4], speeds: [1, 2, 3, 4],
+      make: () => [['...........##....', '.......##..##....', '..^##..##^^##^^..'].join('\n')] },
     { id: 'mini', tiers: [1, 4], speeds: [1, 2], make: () => ['.m.\n...', 8, ',', 7, ',,', 7, '..^##^^...^##^...', 8, '.M.\n...'] },
     // flying and other modes
     { id: 'ship', tiers: [0, 1], speeds: [1], seeded: true,
@@ -111,7 +122,7 @@
       const c = list[Math.floor(this.rng() * list.length)] || CHUNKS[0];
       const seeds = ok[c.id + '@' + this.speed] || [0];
       const seed = seeds[Math.floor(this.rng() * seeds.length)];
-      entries.push(...c.make(seed), RUNWAY[this.speed]);
+      entries.push(...c.make(seed, this.speed), RUNWAY[this.speed]);
       this.last = c.id;
       this.count++;
       const objs = GD.parseMap(entries);
@@ -138,6 +149,6 @@
   GD.Endless = Endless;
   GD.endlessChunkMap = (id, speed, seed) => {
     const c = CHUNKS.find((x) => x.id === id);
-    return c.make(seed);
+    return c.make(seed, speed);
   };
 })(typeof window !== 'undefined' ? window : globalThis);
