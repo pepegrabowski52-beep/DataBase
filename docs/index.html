@@ -263,6 +263,7 @@ p{margin:0}
 /* Dialogs */
 dialog{border:0;padding:0;margin:auto;width:min(980px,calc(100% - 24px));max-width:none;max-height:calc(100% - 24px);background:var(--surface);color:var(--ink);border-radius:22px;box-shadow:var(--shadow);overflow:hidden}
 dialog[open]{display:flex;flex-direction:column;animation:pop .22s ease-out}
+dialog > .toast{position:fixed}
 dialog.narrow{width:min(580px,calc(100% - 24px))}
 dialog::backdrop{background:rgb(8 16 12 / .55)}
 @keyframes pop{from{opacity:0;transform:translateY(12px) scale(.98)}}
@@ -397,10 +398,33 @@ legend{font:800 18px/1.2 var(--f-display);margin-bottom:10px;padding:0}
 .away .addr{font-size:14px;color:var(--ink-soft);word-break:break-all}
 .away .addr b{color:var(--ink);user-select:all}
 
+/* Status-Pillen (Bestellungen, Zahlungen) */
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font:700 12px/1.3 var(--f-body);white-space:nowrap;background:var(--surface-2);color:var(--ink)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.8}
+.pill.tone-good{background:color-mix(in oklab,var(--good) 16%,var(--surface));color:var(--good)}
+.pill.tone-brand{background:color-mix(in oklab,var(--link) 16%,var(--surface));color:var(--link)}
+.pill.tone-info{background:color-mix(in oklab,var(--accent) 22%,var(--surface));color:var(--ink)}
+.pill.tone-warn{background:color-mix(in oklab,var(--sale) 14%,var(--surface));color:var(--sale)}
+.pill.tone-muted{background:var(--surface-2);color:var(--ink-soft)}
+
+/* Bestand, Fotos, kleine Knöpfe */
+.device-slot{display:contents}
+.stock{font-size:13px;font-weight:700}
+.stock.low{color:var(--sale)}
+.stock.out{color:var(--ink-soft)}
+.card.soldout .pic{filter:grayscale(.6);opacity:.75}
+.btn[disabled],.btn:disabled{opacity:.5;cursor:not-allowed;filter:none;transform:none}
+.btn.small{min-height:38px;padding:0 14px;font-size:14px}
+.btn.danger{background:var(--sale);color:var(--sale-ink)}
+img.pimg{display:block;width:100%;height:100%;object-fit:cover}
+.stepper button:disabled{opacity:.35;cursor:not-allowed}
+
 /* Toast */
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:50;transform:translateX(-50%);display:flex;align-items:center;gap:14px;width:max-content;max-width:calc(100% - 32px);padding:12px 12px 12px 18px;border-radius:14px;background:var(--ink);color:var(--bg);box-shadow:var(--shadow);font-weight:600;font-size:15px}
 .toast button{flex:none;min-height:38px;padding:0 14px;border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-weight:700}
 .toast.show{animation:toast .25s ease-out}
+.toast.ok{background:var(--good);color:var(--surface)}
+.toast.err{background:var(--sale);color:var(--sale-ink)}
 @keyframes toast{from{opacity:0;transform:translate(-50%,10px)}}
 
 @media (prefers-reduced-motion:reduce){
@@ -426,6 +450,8 @@ legend{font:800 18px/1.2 var(--f-display);margin-bottom:10px;padding:0}
     </form>
     <nav class="actions" aria-label="App, Merkzettel und Warenkorb">
       <button class="hbtn app" id="appBtn" type="button" data-install aria-label="App laden"><i data-ic="download"></i><span>App laden</span></button>
+      <button class="hbtn" id="adminBtn" type="button" hidden><i data-ic="dashboard"></i><span id="adminLabel">Verwaltung</span></button>
+      <button class="hbtn" id="accountBtn" type="button" aria-label="Anmelden oder registrieren"><i data-ic="user"></i><span id="accountLabel">Anmelden</span></button>
       <button class="hbtn" id="favBtn" type="button" aria-label="Merkzettel"><i data-ic="heart"></i><span>Merkzettel</span><b class="count" id="favCount" hidden>0</b></button>
       <button class="hbtn" id="cartBtn" type="button" aria-label="Warenkorb"><i data-ic="cart"></i><span>Warenkorb</span><b class="count" id="cartCount" hidden>0</b></button>
     </nav>
@@ -451,7 +477,7 @@ legend{font:800 18px/1.2 var(--f-display);margin-bottom:10px;padding:0}
       <div class="collage" id="collage" aria-hidden="true"></div>
     </div>
     <aside class="hero-app" aria-label="Fundus-App">
-      <div id="heroDevice"></div>
+      <div class="device-slot"></div>
       <p class="eyebrow">Neu: die Fundus-App</p>
       <h2>Ohne App Store aufs Tablet holen</h2>
       <p>Direkt aus dem Browser installieren. Kein Konto, kein Download-Center, in zehn Sekunden erledigt.</p>
@@ -476,6 +502,7 @@ legend{font:800 18px/1.2 var(--f-display);margin-bottom:10px;padding:0}
           <option value="auf">Preis aufsteigend</option>
           <option value="ab">Preis absteigend</option>
           <option value="bew">Beste Bewertung</option>
+          <option value="neu">Neueste zuerst</option>
         </select>
       </label>
     </div>
@@ -521,7 +548,7 @@ legend{font:800 18px/1.2 var(--f-display);margin-bottom:10px;padding:0}
           <p class="install-state" id="installState" role="status"></p>
         </div>
       </div>
-      <div id="bandDevice"></div>
+      <div class="device-slot"></div>
     </div>
   </section>
 </main>
@@ -570,84 +597,6 @@ legend{font:800 18px/1.2 var(--f-display);margin-bottom:10px;padding:0}
     </div>
     <div class="cart-list" id="cartList"></div>
     <div class="cart-foot" id="cartFoot"></div>
-  </div>
-</dialog>
-
-<!-- Kasse -->
-<dialog id="dlgCheckout" aria-labelledby="coTitle">
-  <div class="dlg">
-    <button class="x" type="button" data-close aria-label="Kasse schließen"><i data-ic="close"></i></button>
-    <form id="coForm" novalidate>
-      <h2 id="coTitle">Kasse</h2>
-      <div class="co">
-        <div class="co-main">
-          <fieldset>
-            <legend>Lieferadresse</legend>
-            <div class="field"><label for="coName">Vor- und Nachname</label><input class="inp" id="coName" name="coName" autocomplete="name" required placeholder="z. B. Lena Hoffmann"></div>
-            <div class="field"><label for="coStreet">Straße und Hausnummer</label><input class="inp" id="coStreet" name="coStreet" autocomplete="street-address" required placeholder="z. B. Lindenstraße 12"></div>
-            <div class="two">
-              <div class="field"><label for="coZip">PLZ</label><input class="inp" id="coZip" name="coZip" inputmode="numeric" autocomplete="postal-code" required pattern="[0-9]{5}" maxlength="5" placeholder="04109"></div>
-              <div class="field"><label for="coCity">Ort</label><input class="inp" id="coCity" name="coCity" autocomplete="address-level2" required placeholder="Leipzig"></div>
-            </div>
-            <p class="hint err" id="coErr" role="alert" hidden></p>
-          </fieldset>
-          <fieldset>
-            <legend>Versand</legend>
-            <div class="opts">
-              <label class="opt"><input type="radio" name="coShip" id="coShipStd" value="std" checked><span>Standard<small id="coStdDate"></small></span><b id="coStdPrice"></b></label>
-              <label class="opt"><input type="radio" name="coShip" id="coShipExp" value="exp"><span>Express<small id="coExpDate"></small></span><b>+ 4,99 €</b></label>
-            </div>
-          </fieldset>
-          <fieldset>
-            <legend>Zahlungsart</legend>
-            <div class="opts">
-              <label class="opt"><input type="radio" name="coPay" id="coPayInv" value="Rechnung" checked><span>Rechnung<small>Zahlbar innerhalb von 14 Tagen</small></span></label>
-              <label class="opt"><input type="radio" name="coPay" id="coPayPal" value="PayPal"><span>PayPal<small>Weiterleitung nach dem Bestellen</small></span></label>
-              <label class="opt"><input type="radio" name="coPay" id="coPayDebit" value="Lastschrift"><span>Lastschrift<small>Abbuchung nach dem Versand</small></span></label>
-            </div>
-          </fieldset>
-        </div>
-        <aside class="co-sum" id="coSum" aria-label="Bestellübersicht"></aside>
-      </div>
-    </form>
-    <div class="done" id="coDone" hidden>
-      <div class="done-mark"><i data-ic="check"></i></div>
-      <h2 id="doneTitle">Danke!</h2>
-      <p>Deine Bestellung <b id="doneNo"></b> ist eingegangen. Voraussichtliche Lieferung: <b id="doneDate"></b>.</p>
-      <p class="demo-note">Das war eine Demo-Bestellung. Es wurde nichts berechnet und nichts verschickt.</p>
-      <button class="btn" type="button" data-close>Weiter einkaufen</button>
-    </div>
-  </div>
-</dialog>
-
-<!-- Verkaufen -->
-<dialog id="dlgSell" aria-labelledby="sellTitle">
-  <div class="dlg">
-    <button class="x" type="button" data-close aria-label="Schließen"><i data-ic="close"></i></button>
-    <h2 id="sellTitle">Artikel einstellen</h2>
-    <div class="sellgrid">
-      <form class="sellform" id="sellForm" novalidate>
-        <div class="field"><label for="sellName">Artikelname</label><input class="inp" id="sellName" name="sellName" required maxlength="70" placeholder="z. B. Müslischale aus Steinzeug"></div>
-        <div class="two">
-          <div class="field"><label for="sellPrice">Preis in €</label><input class="inp" id="sellPrice" name="sellPrice" inputmode="decimal" required placeholder="19,90"></div>
-          <div class="field"><label for="sellCat">Kategorie</label><select class="inp" id="sellCat" name="sellCat"></select></div>
-        </div>
-        <div class="two">
-          <div class="field"><label for="sellShop">Name deines Shops</label><input class="inp" id="sellShop" name="sellShop" maxlength="40" placeholder="z. B. Werkstatt Sonnenberg"></div>
-          <div class="field"><label for="sellCity">Ort</label><input class="inp" id="sellCity" name="sellCity" maxlength="30" placeholder="z. B. Jena"></div>
-        </div>
-        <div class="field"><span class="lbl" id="picLbl">Bild</span><div class="picks" id="picks" role="radiogroup" aria-labelledby="picLbl"></div></div>
-        <div class="field"><span class="lbl" id="colLbl">Farbe</span><div class="swatches" id="swatches" role="radiogroup" aria-labelledby="colLbl"></div></div>
-        <div class="field"><label for="sellDesc">Beschreibung</label><textarea class="inp" id="sellDesc" name="sellDesc" maxlength="400" placeholder="Material, Maße, was den Artikel besonders macht"></textarea></div>
-        <p class="hint err" id="sellErr" role="alert" hidden></p>
-        <div class="row"><button class="btn dark" type="submit"><i data-ic="check"></i>Jetzt einstellen</button><button class="btn ghost" type="button" data-close>Abbrechen</button></div>
-      </form>
-      <div class="preview" aria-live="polite">
-        <span class="lbl">Vorschau</span>
-        <div id="sellPreview"></div>
-        <p class="hint">Dein Artikel wird in diesem Browser gespeichert und erscheint ganz oben im Shop.</p>
-      </div>
-    </div>
   </div>
 </dialog>
 
@@ -710,645 +659,12 @@ legend{font:800 18px/1.2 var(--f-display);margin-bottom:10px;padding:0}
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-<script>
-(() => {
-'use strict';
-
-/* ---------- Helfer ---------- */
-const $ = (s, r = document) => r.querySelector(s);
-const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const store = {
-  get(k, f) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; } catch (e) { return f; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* Speicher nicht verfügbar */ } }
-};
-const eur = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
-const dec1 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const int = new Intl.NumberFormat('de-DE');
-const dayFmt = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
-const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const FREE = 29, SHIP = 3.99, EXPRESS = 4.99;
-
-/* ---------- Icons ---------- */
-const ICONS = {
-  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
-  cart: '<path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6.2"/><circle cx="10" cy="20.5" r="1.2"/><circle cx="17" cy="20.5" r="1.2"/>',
-  heart: '<path d="M12 20s-7-4.4-9.2-9A4.9 4.9 0 0 1 12 6.3 4.9 4.9 0 0 1 21.2 11C19 15.6 12 20 12 20z"/>',
-  download: '<path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M5 19.5h14"/>',
-  close: '<path d="M6 6l12 12M18 6 6 18"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  minus: '<path d="M5 12h14"/>',
-  trash: '<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/>',
-  truck: '<path d="M2.5 6h11v10h-11zM13.5 9.5h4l3.5 3.5v3h-7.5"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/>',
-  return: '<path d="M9 13 4 8l5-5"/><path d="M4 8h10a6 6 0 0 1 0 12h-3"/>',
-  shield: '<path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/>',
-  store: '<path d="M4 9 5.5 4h13L20 9"/><path d="M4 9h16v1.5a3 3 0 0 1-5.4 1.8A3 3 0 0 1 12 13.6a3 3 0 0 1-2.6-1.3A3 3 0 0 1 4 10.5z"/><path d="M5.5 13.5V20h13v-6.5"/>',
-  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
-  share: '<path d="M12 3v12M8 7l4-4 4 4"/><path d="M7 10.5H5.5V21h13V10.5H17"/>',
-  addsq: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M12 8.5v7M8.5 12h7"/>',
-  dots: '<circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/>',
-  monitor: '<rect x="3" y="4" width="18" height="12.5" rx="2"/><path d="M8.5 20.5h7M12 7v6.5m0 0 2.5-2.5M12 13.5 9.5 11"/>'
-};
-const ic = n => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONS[n] || ''}</svg>`;
-
-/* ---------- Produkt-Illustrationen (200 × 200) ---------- */
-const SH = '<ellipse cx="100" cy="171" rx="56" ry="7" fill="#000" opacity=".09"/>';
-const loop = (from, to, step, fn) => { let s = ''; for (let i = from; i <= to; i += step) s += fn(i); return s; };
-const ART = {
-  mug: (c, d) => `${SH}<path d="M136 86h8a17 17 0 0 1 0 34h-8" fill="none" stroke="${c}" stroke-width="10"/><path d="M58 66h80v66a28 28 0 0 1-28 28H86a28 28 0 0 1-28-28z" fill="${c}"/><path d="M58 66h80v22c-8 0-8 10-16 10s-8-8-16-8-8 12-16 12-8-10-16-10-8 6-16 6z" fill="${d}"/><ellipse cx="98" cy="66" rx="40" ry="7" fill="${d}"/><ellipse cx="98" cy="66" rx="34" ry="4.5" fill="#5A3B22" opacity=".85"/><path d="M84 50q-6-7 0-14t0-14M106 52q-6-7 0-14t0-14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".75"/>`,
-  headphones: (c, d) => `${SH}<path d="M52 118V98a48 48 0 0 1 96 0v20" fill="none" stroke="${c}" stroke-width="11" stroke-linecap="round"/><rect x="34" y="100" width="34" height="58" rx="16" fill="${c}"/><rect x="132" y="100" width="34" height="58" rx="16" fill="${c}"/><rect x="62" y="108" width="12" height="42" rx="6" fill="${d}"/><rect x="126" y="108" width="12" height="42" rx="6" fill="${d}"/><rect x="42" y="112" width="6" height="30" rx="3" fill="#fff" opacity=".2"/>`,
-  candle: (c, d) => `${SH}<rect x="64" y="76" width="72" height="90" rx="14" fill="${c}"/><rect x="68" y="80" width="64" height="8" rx="4" fill="#fff" opacity=".25"/><rect x="64" y="106" width="72" height="36" fill="${d}"/><rect x="80" y="117" width="40" height="5" rx="2.5" fill="${c}" opacity=".75"/><rect x="88" y="127" width="24" height="4" rx="2" fill="${c}" opacity=".45"/><path d="M100 78V66" stroke="#3B2A1A" stroke-width="3" stroke-linecap="round"/><path d="M100 36c11 13 11 22 0 30-11-8-11-17 0-30z" fill="#F59E2E"/><path d="M100 48c5 7 5 11 0 15-5-4-5-8 0-15z" fill="#FFE39A"/>`,
-  plant: (c, d) => `${SH}<path d="M100 118V62M100 118 76 84M100 118l26-30M100 118 66 104M100 118l36-12" stroke="${d}" stroke-width="4" stroke-linecap="round"/><g fill="${d}"><ellipse cx="100" cy="56" rx="15" ry="27"/><ellipse cx="72" cy="78" rx="25" ry="14" transform="rotate(-38 72 78)"/><ellipse cx="130" cy="80" rx="26" ry="14" transform="rotate(34 130 80)"/><ellipse cx="60" cy="102" rx="20" ry="10" transform="rotate(-12 60 102)"/><ellipse cx="140" cy="104" rx="20" ry="10" transform="rotate(12 140 104)"/></g><path d="M100 38v34M62 68l18 14M138 70l-18 12" stroke="#fff" stroke-width="2.5" opacity=".3" stroke-linecap="round"/><path d="M68 124h64l-8 42H76z" fill="${c}"/><rect x="62" y="114" width="76" height="14" rx="5" fill="${c}"/><rect x="62" y="124" width="76" height="4" fill="#000" opacity=".08"/>`,
-  backpack: (c, d) => `${SH}<rect x="60" y="52" width="80" height="114" rx="24" fill="${c}"/><rect x="66" y="40" width="68" height="26" rx="10" fill="${d}"/><rect x="66" y="58" width="68" height="5" fill="#000" opacity=".12"/><rect x="95" y="40" width="10" height="46" rx="3" fill="${d}"/><rect x="92" y="80" width="16" height="10" rx="2" fill="#1D1D1D" opacity=".55"/><rect x="72" y="112" width="56" height="44" rx="12" fill="${d}"/><path d="M80 124h40" stroke="#fff" stroke-width="3" opacity=".35" stroke-linecap="round"/>`,
-  necklace: (c, d) => `${SH}<path d="M50 34c4 52 28 76 50 80 22-4 46-28 50-80" fill="none" stroke="${c}" stroke-width="3.5" stroke-dasharray="3 3.5" stroke-linecap="round"/><rect x="96" y="110" width="8" height="12" rx="3" fill="${c}"/><circle cx="100" cy="138" r="20" fill="${c}"/><circle cx="100" cy="138" r="14" fill="${d}"/><circle cx="94" cy="132" r="4" fill="#fff" opacity=".85"/><path d="M106 129a10 10 0 1 0 5 15 12 12 0 0 1-5-15z" fill="#fff" opacity=".35"/>`,
-  book: (c, d) => `${SH}<rect x="70" y="44" width="72" height="120" rx="3" fill="#F3EEE3"/><rect x="62" y="40" width="74" height="122" rx="4" fill="${c}"/><rect x="62" y="40" width="9" height="122" rx="3" fill="#000" opacity=".18"/><rect x="82" y="60" width="42" height="5" rx="2.5" fill="${d}"/><rect x="82" y="70" width="30" height="4" rx="2" fill="${d}" opacity=".7"/><g fill="${d}"><circle cx="92" cy="120" r="9"/><circle cx="104" cy="113" r="12"/><circle cx="117" cy="121" r="8"/><rect x="88" y="120" width="32" height="9" rx="4.5"/></g><rect x="82" y="142" width="22" height="3" rx="1.5" fill="${d}" opacity=".6"/>`,
-  lamp: (c, d) => `${SH}<ellipse cx="100" cy="100" rx="46" ry="8" fill="#FFE7A0" opacity=".55"/><rect x="97" y="92" width="6" height="66" rx="3" fill="${d}"/><ellipse cx="100" cy="162" rx="30" ry="7" fill="${d}"/><path d="M72 46h56l18 50H54z" fill="${c}"/><path d="M72 46h56l3 8H69z" fill="#000" opacity=".07"/><path d="M86 46l-6 50M100 46v50M114 46l6 50" stroke="#000" stroke-width="1.2" opacity=".06"/>`,
-  sneaker: (c, d) => `${SH}<path d="M38 138c0-20 12-34 26-38l26-10c8 16 22 22 36 22l24 4c12 2 20 10 20 22z" fill="${c}"/><path d="M38 138c0-16 6-28 16-34l4 34z" fill="${d}"/><path d="M84 98l8 10M94 94l8 10M104 92l6 10" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/><path d="M68 126h70" fill="none" stroke="${d}" stroke-width="6" stroke-linecap="round"/><path d="M34 138h138a6 6 0 0 1 0 12H40a6 6 0 0 1-6-6z" fill="#F7F5F0"/><path d="M36 146h140" stroke="#000" opacity=".08" stroke-width="3"/>`,
-  watch: (c, d) => `${SH}<rect x="80" y="30" width="40" height="140" rx="14" fill="${c}"/><rect x="80" y="44" width="40" height="3" fill="#000" opacity=".12"/><rect x="80" y="153" width="40" height="3" fill="#000" opacity=".12"/><rect x="62" y="62" width="76" height="84" rx="22" fill="#2B302E"/><rect x="138" y="90" width="6" height="18" rx="2" fill="#2B302E"/><rect x="70" y="70" width="60" height="68" rx="16" fill="#0D1311"/><circle cx="100" cy="104" r="20" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="5"/><circle cx="100" cy="104" r="20" fill="none" stroke="${d}" stroke-width="5" stroke-linecap="round" stroke-dasharray="88 126" transform="rotate(-90 100 104)"/><rect x="92" y="100" width="16" height="4" rx="2" fill="#fff" opacity=".85"/><rect x="95" y="108" width="10" height="3" rx="1.5" fill="#fff" opacity=".5"/>`,
-  beanie: (c, d) => `${SH}<circle cx="100" cy="50" r="17" fill="${d}"/><path d="M54 132c0-50 22-72 46-72s46 22 46 72z" fill="${c}"/><path d="M70 92${loop(0, 9, 1, () => 'l3 5 3-5')}M64 108${loop(0, 11, 1, () => 'l3 5 3-5')}" fill="none" stroke="${d}" stroke-width="2" opacity=".5" stroke-linejoin="round"/><rect x="48" y="124" width="104" height="34" rx="10" fill="${c}"/><rect x="48" y="124" width="104" height="34" rx="10" fill="#000" opacity=".1"/><path d="${loop(58, 142, 8, x => `M${x} 129v24`)}" stroke="#000" stroke-width="2" opacity=".12"/>`,
-  teapot: (c, d) => `${SH}<path d="M68 96c0-48 64-48 64 0" fill="none" stroke="${d}" stroke-width="5"/><path d="M60 112c-16-4-22-20-30-30l8-5c8 10 14 20 26 24z" fill="${c}"/><ellipse cx="100" cy="122" rx="46" ry="40" fill="${c}"/><ellipse cx="100" cy="86" rx="26" ry="7" fill="${c}"/><ellipse cx="100" cy="86" rx="26" ry="7" fill="#fff" opacity=".1"/><circle cx="100" cy="76" r="7" fill="${d}"/><g fill="${d}" opacity=".5">${[104, 118, 132, 146].map((y, i) => loop(64, 136, 12, x => { const cx = x + (i % 2 ? 6 : 0); return ((cx - 100) / 40) ** 2 + ((y - 122) / 34) ** 2 < 1 ? `<circle cx="${cx}" cy="${y}" r="3"/>` : ''; })).join('')}</g>`,
-  speaker: (c, d) => `${SH}<path d="M78 64c0-22 44-22 44 0" fill="none" stroke="${d}" stroke-width="6" stroke-linecap="round"/><rect x="54" y="60" width="92" height="104" rx="30" fill="${c}"/><circle cx="100" cy="114" r="32" fill="${d}"/><circle cx="100" cy="114" r="24" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width="2"/><circle cx="100" cy="114" r="12" fill="${c}" opacity=".7"/><rect x="82" y="69" width="10" height="4" rx="2" fill="#fff" opacity=".5"/><rect x="108" y="69" width="10" height="4" rx="2" fill="#fff" opacity=".5"/>`,
-  bowl: (c, d) => `${SH}<ellipse cx="100" cy="102" rx="62" ry="10" fill="${d}"/><ellipse cx="100" cy="102" rx="56" ry="7" fill="#000" opacity=".2"/><g fill="#6FA35A"><ellipse cx="80" cy="96" rx="17" ry="8" transform="rotate(-20 80 96)"/><ellipse cx="116" cy="94" rx="18" ry="9" transform="rotate(16 116 94)"/><ellipse cx="98" cy="90" rx="10" ry="6"/></g><circle cx="102" cy="98" r="7" fill="#C8432F"/><path d="M38 102a62 10 0 0 0 124 0a62 56 0 0 1-124 0z" fill="${c}"/><path d="M52 124c30 14 66 14 96 0M64 142c22 10 50 10 72 0" fill="none" stroke="${d}" stroke-width="2.5" opacity=".6" stroke-linecap="round"/>`,
-  train: (c, d) => `${SH}<rect x="30" y="152" width="140" height="4" rx="2" fill="#8A6A4A" opacity=".45"/><rect x="102" y="126" width="16" height="5" fill="#6B4A2F"/><rect x="40" y="98" width="64" height="40" rx="6" fill="${c}"/><rect x="78" y="70" width="30" height="46" rx="5" fill="${c}"/><rect x="74" y="64" width="38" height="10" rx="3" fill="${d}"/><rect x="85" y="80" width="16" height="14" rx="2" fill="#fff" opacity=".75"/><rect x="50" y="80" width="12" height="20" rx="2" fill="${d}"/><rect x="47" y="76" width="18" height="6" rx="2" fill="${d}"/><rect x="116" y="104" width="46" height="34" rx="6" fill="${d}"/><rect x="122" y="96" width="34" height="10" rx="3" fill="#E9C46A"/><g fill="#3A2E25"><circle cx="56" cy="142" r="10"/><circle cx="88" cy="142" r="10"/><circle cx="128" cy="142" r="9"/><circle cx="150" cy="142" r="9"/></g><g fill="#E9DCC6"><circle cx="56" cy="142" r="3"/><circle cx="88" cy="142" r="3"/><circle cx="128" cy="142" r="3"/><circle cx="150" cy="142" r="3"/></g>`,
-  ereader: (c, d) => `${SH}<rect x="58" y="34" width="84" height="132" rx="12" fill="${c}"/><rect x="66" y="44" width="68" height="102" rx="3" fill="${d}"/><g fill="#4A4338" opacity=".35">${loop(56, 132, 8, y => `<rect x="74" y="${y}" width="${y === 56 ? 30 : y % 24 === 8 ? 38 : 52}" height="3" rx="1.5"/>`)}</g><circle cx="100" cy="156" r="3.5" fill="#fff" opacity=".25"/>`,
-  can: (c, d) => `${SH}<path d="M134 96c26-2 28 46 4 52" fill="none" stroke="${c}" stroke-width="8" stroke-linecap="round"/><path d="M76 124 40 82l8-7 38 40z" fill="${c}"/><rect x="26" y="66" width="26" height="14" rx="4" fill="${d}" transform="rotate(-42 39 73)"/><path d="M84 90c0-34 44-34 44 0" fill="none" stroke="${c}" stroke-width="7"/><rect x="72" y="88" width="64" height="76" rx="8" fill="${c}"/><rect x="72" y="100" width="64" height="5" fill="${d}"/><rect x="72" y="148" width="64" height="5" fill="${d}"/><rect x="80" y="110" width="6" height="32" rx="3" fill="#fff" opacity=".28"/>`,
-  linen: (c, d) => `${SH}<rect x="44" y="128" width="112" height="30" rx="6" fill="${c}"/><rect x="50" y="102" width="100" height="30" rx="6" fill="${d}"/><rect x="56" y="76" width="88" height="30" rx="6" fill="${c}"/><g fill="#fff" opacity=".5"><rect x="44" y="140" width="112" height="3"/><rect x="56" y="88" width="88" height="3"/></g><rect x="50" y="114" width="100" height="3" fill="${c}" opacity=".6"/><path d="M44 154h112M50 128h100M56 102h88" stroke="#000" opacity=".08" stroke-width="3"/>`
-};
-const PIC_NAMES = { mug: 'Tasse', headphones: 'Kopfhörer', candle: 'Kerze', plant: 'Pflanze', backpack: 'Rucksack', necklace: 'Schmuck', book: 'Buch', lamp: 'Lampe', sneaker: 'Schuh', watch: 'Uhr', beanie: 'Mütze', teapot: 'Teekanne', speaker: 'Lautsprecher', bowl: 'Schale', train: 'Spielzeug', ereader: 'E-Reader', can: 'Gießkanne', linen: 'Textil' };
-const art = p => `<svg viewBox="0 0 200 200" aria-hidden="true" focusable="false">${(ART[p.pic] || ART.linen)(p.c, p.d)}</svg>`;
-
-/* ---------- Sortiment ---------- */
-const CATS = { elektronik: 'Elektronik', kueche: 'Küche', wohnen: 'Wohnen', mode: 'Mode & Schmuck', garten: 'Garten', buecher: 'Bücher', spielzeug: 'Spielzeug' };
-const BASE = [
-  { id: 'p1', name: 'Steinzeug-Tasse »Moos«, 350 ml', seller: 'Töpferei Lindner', city: 'Leipzig', cat: 'kueche', price: 24.9, rating: 4.8, reviews: 312, handmade: true, badge: 'Bestseller', pic: 'mug', c: '#5E7F5B', d: '#D9CBB0', tint: '#E5EEDD',
-    desc: 'Auf der Drehscheibe gedreht und mit einer moosgrünen Laufglasur überzogen. Jede Tasse ist ein Einzelstück, die Farbverläufe variieren leicht.',
-    facts: [['Material', 'Steinzeug, bleifrei glasiert'], ['Inhalt', '350 ml'], ['Pflege', 'spülmaschinenfest'], ['Versand aus', 'Leipzig']] },
-  { id: 'p2', name: 'Kabellose Kopfhörer mit Geräuschunterdrückung', seller: 'SoundKontor', city: 'Hamburg', cat: 'elektronik', price: 89.99, old: 129.99, rating: 4.5, reviews: 2841, express: true, pic: 'headphones', c: '#2F3A45', d: '#9FB3C8', tint: '#E2E8EF',
-    desc: 'Aktive Geräuschunterdrückung, 40 Stunden Akkulaufzeit und Schnellladen über USB-C: 10 Minuten Laden reichen für 5 Stunden Musik.',
-    facts: [['Akkulaufzeit', 'bis 40 h'], ['Anschluss', 'Bluetooth 5.3, USB-C'], ['Gewicht', '254 g'], ['Garantie', '2 Jahre']] },
-  { id: 'p3', name: 'Duftkerze »Waldboden« aus Sojawachs', seller: 'Lichtwerk', city: 'Kassel', cat: 'wohnen', price: 18.5, rating: 4.9, reviews: 654, handmade: true, pic: 'candle', c: '#B9783A', d: '#F3E7D3', tint: '#F5E9DA',
-    desc: 'Handgegossen aus Sojawachs mit Baumwolldocht. Duftnoten von Zedernholz, Moos und einem Hauch Vetiver. Brenndauer etwa 45 Stunden.',
-    facts: [['Wachs', '100 % Sojawachs'], ['Brenndauer', 'ca. 45 h'], ['Gewicht', '220 g'], ['Versand aus', 'Kassel']] },
-  { id: 'p4', name: 'Monstera deliciosa, 60 cm, im Keramiktopf', seller: 'Grünzeug Gärtnerei', city: 'Bremen', cat: 'garten', price: 39, rating: 4.6, reviews: 428, pic: 'plant', c: '#D8D2C4', d: '#2F7A4F', tint: '#E3EFE4',
-    desc: 'Pflegeleichte Zimmerpflanze mit den typisch geschlitzten Blättern. Kommt gut verpackt in einem hellen Keramiktopf.',
-    facts: [['Höhe', 'ca. 60 cm inkl. Topf'], ['Topf', 'Ø 17 cm, Keramik'], ['Standort', 'hell, keine pralle Sonne'], ['Versand', 'im Pflanzenkarton']] },
-  { id: 'p5', name: 'Rolltop-Rucksack 25 l, wasserabweisend', seller: 'Nordpack', city: 'Kiel', cat: 'mode', price: 69.95, old: 84.95, rating: 4.7, reviews: 1103, express: true, pic: 'backpack', c: '#C4572F', d: '#8E3B1E', tint: '#F6E3D9',
-    desc: 'Robuster Rucksack aus recyceltem Planenstoff mit gepolstertem Laptopfach bis 15 Zoll. Der Rolltop lässt sich auf 30 Liter erweitern.',
-    facts: [['Volumen', '25–30 l'], ['Material', 'recyceltes PET, PU-beschichtet'], ['Laptopfach', 'bis 15″'], ['Gewicht', '780 g']] },
-  { id: 'p6', name: 'Kette mit Mondstein-Anhänger, 925 Silber', seller: 'Atelier Mira', city: 'Freiburg', cat: 'mode', price: 54, rating: 4.9, reviews: 276, handmade: true, pic: 'necklace', c: '#A7AFB5', d: '#D6E4F2', tint: '#E9ECF4',
-    desc: 'Ein in Silber gefasster Regenbogen-Mondstein an einer feinen Ankerkette. Von Hand gefertigt und in einer Geschenkschachtel verpackt.',
-    facts: [['Material', '925 Sterlingsilber'], ['Kettenlänge', '45 cm, verstellbar'], ['Stein', 'Mondstein, 10 mm'], ['Versand aus', 'Freiburg']] },
-  { id: 'p7', name: 'Die Vermessung der Wolken – Roman, gebunden', seller: 'Buchhandlung am Markt', city: 'Münster', cat: 'buecher', price: 22, rating: 4.4, reviews: 189, express: true, pic: 'book', c: '#2D4D7A', d: '#F1D9A7', tint: '#E1E8F2',
-    desc: 'Eine Meteorologin kehrt in ihr Heimatdorf an der Küste zurück und beginnt, die Wolken über dem Watt zu katalogisieren. Ein leiser Roman über Herkunft und Wetter.',
-    facts: [['Seiten', '384'], ['Einband', 'Hardcover mit Lesebändchen'], ['Sprache', 'Deutsch'], ['Erschienen', 'September 2026']] },
-  { id: 'p8', name: 'Tischleuchte aus Messing mit Leinenschirm', seller: 'Werkhaus Licht', city: 'Dresden', cat: 'wohnen', price: 119, old: 149, rating: 4.6, reviews: 97, pic: 'lamp', c: '#E9DFC9', d: '#B98B3E', tint: '#F1ECE0',
-    desc: 'Gebürsteter Messingfuß mit naturfarbenem Leinenschirm. Warmes, blendfreies Licht für Schreibtisch und Nachttisch.',
-    facts: [['Höhe', '46 cm'], ['Fassung', 'E27, max. 40 W'], ['Kabel', '1,8 m Textilkabel mit Schalter'], ['Leuchtmittel', 'nicht enthalten']] },
-  { id: 'p9', name: 'Laufschuh »Leicht 2.0«, Damen & Herren', seller: 'Laufwerk', city: 'Nürnberg', cat: 'mode', price: 99.9, rating: 4.3, reviews: 1532, express: true, pic: 'sneaker', c: '#3E6FB0', d: '#F0B429', tint: '#E2EAF5',
-    desc: 'Leichter Neutralschuh mit gedämpfter Mittelsohle und atmungsaktivem Mesh-Obermaterial. Für Strecken von 5 bis 21 Kilometern.',
-    facts: [['Gewicht', '248 g (Gr. 42)'], ['Sprengung', '8 mm'], ['Größen', '36–47'], ['Rückgabe', '30 Tage kostenlos']] },
-  { id: 'p10', name: 'Smartwatch mit GPS und Pulsmessung', seller: 'Taktgeber', city: 'München', cat: 'elektronik', price: 149, old: 199, rating: 4.4, reviews: 3920, express: true, pic: 'watch', c: '#4A5D52', d: '#7BD389', tint: '#E3ECE6',
-    desc: 'Misst Puls, Schlaf und Schritte, zeichnet Läufe per GPS auf und hält bis zu 12 Tage durch. Wasserdicht bis 50 Meter.',
-    facts: [['Akku', 'bis 12 Tage'], ['Display', '1,4″ AMOLED'], ['Wasserdicht', '5 ATM'], ['Kompatibel', 'Android & iOS']] },
-  { id: 'p11', name: 'Strickmütze aus Merinowolle, handgestrickt', seller: 'Wollwerk Inge', city: 'Lüneburg', cat: 'mode', price: 32, rating: 5.0, reviews: 143, handmade: true, pic: 'beanie', c: '#C9A227', d: '#F2EDE2', tint: '#F5EED8',
-    desc: 'Von Hand gestrickt aus weicher, nicht kratzender Merinowolle, mit breitem Rippbündchen und dickem Bommel.',
-    facts: [['Material', '100 % Merinowolle'], ['Größe', 'Einheitsgröße, dehnbar'], ['Pflege', 'Handwäsche, 30 °C'], ['Versand aus', 'Lüneburg']] },
-  { id: 'p12', name: 'Teekanne aus Gusseisen, 0,9 l', seller: 'Teehaus Kirschblüte', city: 'Köln', cat: 'kueche', price: 45.9, rating: 4.7, reviews: 508, pic: 'teapot', c: '#34403D', d: '#8C9A93', tint: '#E4E9E7',
-    desc: 'Emaillierte Gusseisenkanne mit herausnehmbarem Edelstahlsieb. Hält Tee lange warm, für grünen und schwarzen Tee.',
-    facts: [['Inhalt', '0,9 l'], ['Material', 'Gusseisen, innen emailliert'], ['Sieb', 'Edelstahl, herausnehmbar'], ['Herd', 'nicht herdgeeignet']] },
-  { id: 'p13', name: 'Bluetooth-Lautsprecher, wasserdicht', seller: 'SoundKontor', city: 'Hamburg', cat: 'elektronik', price: 49.99, old: 59.99, rating: 4.5, reviews: 2210, express: true, pic: 'speaker', c: '#2E6B6A', d: '#1C3F3E', tint: '#DDEDEC',
-    desc: 'Kräftiger 360°-Klang, 16 Stunden Akku und Schutzklasse IP67. Zwei Lautsprecher lassen sich zu einem Stereopaar koppeln.',
-    facts: [['Akku', 'bis 16 h'], ['Schutzklasse', 'IP67'], ['Leistung', '20 W'], ['Gewicht', '540 g']] },
-  { id: 'p14', name: 'Salatschale aus Olivenholz, Ø 28 cm', seller: 'Holzkunst Brandt', city: 'Rosenheim', cat: 'kueche', price: 58, rating: 4.8, reviews: 221, handmade: true, pic: 'bowl', c: '#B48252', d: '#8A5A30', tint: '#F2E6D8',
-    desc: 'Aus einem Stück Olivenholz gedrechselt und mit Leinöl behandelt. Jede Schale hat ihre eigene Maserung.',
-    facts: [['Durchmesser', '28 cm'], ['Holz', 'Olivenholz'], ['Oberfläche', 'geölt, lebensmittelecht'], ['Pflege', 'von Hand spülen']] },
-  { id: 'p15', name: 'Holzeisenbahn, Starter-Set mit 24 Teilen', seller: 'Kleine Werkstatt', city: 'Seiffen', cat: 'spielzeug', price: 34.9, rating: 4.9, reviews: 367, handmade: true, pic: 'train', c: '#C8463D', d: '#3D7DCA', tint: '#F5E1DE',
-    desc: 'Lok, Waggon und 22 Schienenteile aus heimischer Buche, mit Wasserfarben lackiert. Passt zu den gängigen Holzbahnsystemen.',
-    facts: [['Teile', '24'], ['Material', 'Buche, speichelfest lackiert'], ['Alter', 'ab 3 Jahren'], ['Versand aus', 'Seiffen im Erzgebirge']] },
-  { id: 'p16', name: 'E-Reader 7″ mit warmem Licht', seller: 'Lesezeichen Tech', city: 'Berlin', cat: 'elektronik', price: 129, rating: 4.6, reviews: 1876, express: true, pic: 'ereader', c: '#26302C', d: '#EFE6D2', tint: '#E7E5DF',
-    desc: 'Blendfreies 7-Zoll-Display mit einstellbarer Lichtfarbe, 32 GB Speicher und wochenlanger Akkulaufzeit. Wasserdicht nach IPX8.',
-    facts: [['Display', '7″, 300 ppi'], ['Speicher', '32 GB'], ['Akku', 'bis 6 Wochen'], ['Wasserdicht', 'IPX8']] },
-  { id: 'p17', name: 'Gießkanne aus verzinktem Stahl, 5 l', seller: 'Gartenhaus Meyer', city: 'Hannover', cat: 'garten', price: 27.5, rating: 4.5, reviews: 312, pic: 'can', c: '#9AA7A8', d: '#6E7B7C', tint: '#E6ECEA',
-    desc: 'Klassische Gießkanne mit abnehmbarer Messingbrause. Feuerverzinkt und dadurch rostfrei für viele Jahre.',
-    facts: [['Inhalt', '5 l'], ['Material', 'feuerverzinkter Stahl'], ['Brause', 'Messing, abnehmbar'], ['Gewicht', '1,3 kg']] },
-  { id: 'p18', name: 'Leinen-Tischdecke, 140 × 220 cm', seller: 'Webstube Ostsee', city: 'Rostock', cat: 'wohnen', price: 64, rating: 4.7, reviews: 88, handmade: true, pic: 'linen', c: '#7E9AB0', d: '#E8E1D3', tint: '#E5EAF0',
-    desc: 'Auf dem Webstuhl gewebt aus reinem, vorgewaschenem Leinen. Weich im Griff und mit jeder Wäsche schöner.',
-    facts: [['Maße', '140 × 220 cm'], ['Material', '100 % Leinen'], ['Pflege', 'Maschinenwäsche 40 °C'], ['Versand aus', 'Rostock']] }
-];
-const SWATCHES = [
-  { name: 'Moos', c: '#5E7F5B', d: '#D9CBB0', tint: '#E5EEDD' },
-  { name: 'Ziegel', c: '#C4572F', d: '#8E3B1E', tint: '#F6E3D9' },
-  { name: 'Nachtblau', c: '#2D4D7A', d: '#F1D9A7', tint: '#E1E8F2' },
-  { name: 'Senf', c: '#C9A227', d: '#F2EDE2', tint: '#F5EED8' },
-  { name: 'Taube', c: '#7E9AB0', d: '#E8E1D3', tint: '#E5EAF0' },
-  { name: 'Olive', c: '#B48252', d: '#8A5A30', tint: '#F2E6D8' }
-];
-
-/* ---------- Zustand ---------- */
-const S = {
-  q: '', cat: 'alle', sort: 'empf', hand: false, fast: false, deals: false, favsOnly: false,
-  cart: store.get('fundus.cart', {}),
-  favs: new Set(store.get('fundus.favs', [])),
-  own: store.get('fundus.own', [])
-};
-if (!Array.isArray(S.own)) S.own = [];
-const all = () => [...S.own, ...BASE];
-const byId = id => all().find(p => p.id === id);
-for (const id of Object.keys(S.cart)) if (!byId(id) || !(S.cart[id] > 0)) delete S.cart[id];
-const saveCart = () => store.set('fundus.cart', S.cart);
-const saveFavs = () => store.set('fundus.favs', [...S.favs]);
-const saveOwn = () => store.set('fundus.own', S.own);
-
-/* ---------- Lieferdaten ---------- */
-function plusWorkdays(n) {
-  const d = new Date();
-  let added = 0;
-  while (added < n) { d.setDate(d.getDate() + 1); if (d.getDay() !== 0) added++; }
-  return d;
-}
-function dayLabel(d) {
-  const t = new Date(); t.setDate(t.getDate() + 1);
-  return d.toDateString() === t.toDateString() ? `morgen, ${dayFmt.format(d)}` : dayFmt.format(d);
-}
-const fastDate = () => dayLabel(plusWorkdays(1));
-const stdRange = () => `${dayFmt.format(plusWorkdays(3))} – ${dayFmt.format(plusWorkdays(5))}`;
-function delivery(p) {
-  const free = p.price >= FREE ? ' · versandkostenfrei' : '';
-  return p.express ? `<b>Lieferung ${fastDate()}</b>${free}` : `Lieferung ${stdRange()}${free}`;
-}
-
-/* ---------- Bausteine ---------- */
-const stars = r => `<span class="stars" role="img" aria-label="${dec1.format(r)} von 5 Sternen"><span style="width:${(r / 5) * 100}%"></span></span>`;
-const rating = p => p.reviews
-  ? `<p class="rate">${stars(p.rating)}<span>${dec1.format(p.rating)} (${int.format(p.reviews)})</span></p>`
-  : '<p class="rate"><span>Neu · noch keine Bewertungen</span></p>';
-const pct = p => (p.old ? Math.round((1 - p.price / p.old) * 100) : 0);
-function priceHTML(p) {
-  const off = pct(p);
-  return `<p class="price"><strong>${eur.format(p.price)}</strong>${off ? `<s>${eur.format(p.old)}</s><span class="pct">−${off} %</span>` : ''}</p>`;
-}
-function card(p) {
-  const fav = S.favs.has(p.id);
-  const off = pct(p);
-  const badges = [
-    p.own ? '<span class="badge own">Dein Angebot</span>' : '',
-    p.handmade ? '<span class="badge hand">Handgemacht</span>' : '',
-    off ? `<span class="badge sale">Angebot</span>` : '',
-    p.badge && !off ? `<span class="badge">${esc(p.badge)}</span>` : ''
-  ].filter(Boolean).slice(0, 2).join('');
-  return `<article class="card">
-    <button class="pic" type="button" data-open="${p.id}" style="--tint:${p.tint}" aria-label="${esc(p.name)} ansehen">${art(p)}<span class="badges">${badges}</span></button>
-    <button class="fav" type="button" data-fav="${p.id}" aria-pressed="${fav}" aria-label="${fav ? 'Vom Merkzettel entfernen' : 'Auf den Merkzettel'}">${ic('heart')}</button>
-    <div class="cbody">
-      <p class="seller">${esc(p.seller)}${p.city ? ' · ' + esc(p.city) : ''}</p>
-      <h3 class="name"><button type="button" data-open="${p.id}">${esc(p.name)}</button></h3>
-      ${rating(p)}
-      ${priceHTML(p)}
-      <p class="ship">${delivery(p)}</p>
-      <button class="btn" type="button" data-add="${p.id}" aria-label="${esc(p.name)} in den Warenkorb">${ic('cart')}<span>In den Warenkorb</span></button>
-    </div>
-  </article>`;
-}
-function device() {
-  const ids = ['p1', 'p4', 'p2', 'p6', 'p15', 'p11'];
-  return `<div class="device" aria-hidden="true"><div class="screen"><div class="s-top"><span class="s-logo"></span><span class="s-search"></span></div><div class="s-grid">${ids.map(byId).map(p => `<div class="s-tile" style="--tint:${p.tint}">${art(p)}</div>`).join('')}</div></div></div>`;
-}
-
-/* ---------- Liste ---------- */
-function visible() {
-  const q = S.q.trim().toLowerCase();
-  const score = p => p.rating * Math.log10(p.reviews + 10);
-  const sorters = {
-    empf: (a, b) => (b.own ? 1 : 0) - (a.own ? 1 : 0) || score(b) - score(a),
-    auf: (a, b) => a.price - b.price,
-    ab: (a, b) => b.price - a.price,
-    bew: (a, b) => b.rating - a.rating || b.reviews - a.reviews
-  };
-  return all().filter(p =>
-    (S.cat === 'alle' || p.cat === S.cat) &&
-    (!S.hand || p.handmade) && (!S.fast || p.express) && (!S.deals || p.old) &&
-    (!S.favsOnly || S.favs.has(p.id)) &&
-    (!q || [p.name, p.seller, p.city, CATS[p.cat], p.desc].join(' ').toLowerCase().includes(q))
-  ).sort(sorters[S.sort] || sorters.empf);
-}
-function renderChips() {
-  const cats = [['alle', 'Alle'], ...Object.entries(CATS)];
-  $('#chips').innerHTML =
-    cats.map(([k, l]) => `<button type="button" class="chip" data-cat="${k}" aria-pressed="${S.cat === k}">${l}</button>`).join('') +
-    '<span class="chip-sep" aria-hidden="true"></span>' +
-    [['hand', 'Handgemacht'], ['fast', 'Morgen da'], ['deals', 'Angebote']]
-      .map(([k, l]) => `<button type="button" class="chip tog" data-tog="${k}" aria-pressed="${S[k]}">${S[k] ? ic('check') : ''}${l}</button>`).join('') +
-    (S.favsOnly ? `<button type="button" class="chip tog" data-tog="favsOnly" aria-pressed="true">${ic('heart')}Merkzettel${ic('close')}</button>` : '');
-}
-function render() {
-  renderChips();
-  $('#searchCat').value = S.cat;
-  $('#sort').value = S.sort;
-  if ($('#q').value !== S.q) $('#q').value = S.q;
-  const list = visible();
-  $('#grid').innerHTML = list.map(card).join('');
-  $('#empty').hidden = list.length > 0;
-  $('#resultCount').textContent = `${list.length} Artikel`;
-  let title = 'Beliebt diese Woche';
-  if (S.favsOnly) title = 'Dein Merkzettel';
-  else if (S.q.trim()) title = `Ergebnisse für „${S.q.trim()}“`;
-  else if (S.cat !== 'alle') title = CATS[S.cat];
-  else if (S.hand) title = 'Handgemacht';
-  else if (S.deals) title = 'Angebote';
-  else if (S.fast) title = 'Morgen bei dir';
-  $('#resultsTitle').textContent = title;
-  $('#emptyMsg').textContent = S.favsOnly && !S.favs.size
-    ? 'Tippe auf das Herz bei einem Artikel, um ihn hier zu sammeln.'
-    : 'Versuch es mit einem anderen Suchbegriff oder entferne einen Filter.';
-}
-const toShop = () => $('#shop').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
-function resetFilters() { Object.assign(S, { q: '', cat: 'alle', hand: false, fast: false, deals: false, favsOnly: false }); }
-
-/* ---------- Kopfzeile ---------- */
-function updateBadges() {
-  const n = Object.values(S.cart).reduce((a, b) => a + b, 0);
-  const f = S.favs.size;
-  $('#cartCount').textContent = n; $('#cartCount').hidden = !n;
-  $('#favCount').textContent = f; $('#favCount').hidden = !f;
-  $('#cartBtn').setAttribute('aria-label', `Warenkorb, ${n} Artikel`);
-  $('#favBtn').setAttribute('aria-label', `Merkzettel, ${f} Artikel`);
-}
-
-/* ---------- Toast ---------- */
-let toastTimer;
-function toast(msg, action) {
-  const t = $('#toast');
-  t.innerHTML = `<span>${msg}</span>${action ? `<button type="button">${action.label}</button>` : ''}`;
-  if (action) t.querySelector('button').onclick = () => { t.hidden = true; action.run(); };
-  t.hidden = false;
-  t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 4000);
-}
-
-/* ---------- Dialoge ---------- */
-function openDlg(d) {
-  if (!d.open) d.showModal();
-  const sc = d.querySelector('.dlg, .cart-list');
-  if (sc) sc.scrollTop = 0;
-}
-const closeAll = () => $$('dialog[open]').forEach(d => d.close());
-$$('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
-
-/* ---------- Produktdetails ---------- */
-let dtQty = 1;
-function openProduct(id) {
-  const p = byId(id);
-  if (!p) return;
-  dtQty = 1;
-  const fav = S.favs.has(p.id);
-  const off = pct(p);
-  $('#dtBody').innerHTML = `
-    <button class="x" type="button" data-close aria-label="Schließen">${ic('close')}</button>
-    <div class="dt">
-      <div class="pic" style="--tint:${p.tint}">${art(p)}<span class="badges">${p.handmade ? '<span class="badge hand">Handgemacht</span>' : ''}${off ? `<span class="badge sale">−${off} %</span>` : ''}</span></div>
-      <div class="dt-info">
-        <p class="seller">von <button class="linkbtn" type="button" data-seller="${esc(p.seller)}">${esc(p.seller)}</button>${p.city ? ' · ' + esc(p.city) : ''}</p>
-        <h2 id="dtTitle">${esc(p.name)}</h2>
-        ${rating(p)}
-        <div>${priceHTML(p)}<p class="vat">inkl. MwSt., ${p.price >= FREE ? 'versandkostenfrei' : `zzgl. ${eur.format(SHIP)} Versand`}</p></div>
-        <p class="ship">${delivery(p)}</p>
-        <div class="buybox">
-          <div class="stepper" role="group" aria-label="Menge">
-            <button type="button" data-dq="-1" aria-label="Eins weniger">${ic('minus')}</button>
-            <output id="dtQty" aria-live="polite">1</output>
-            <button type="button" data-dq="1" aria-label="Eins mehr">${ic('plus')}</button>
-          </div>
-          <button class="btn" type="button" data-add="${p.id}" data-from="detail">${ic('cart')}In den Warenkorb</button>
-          <button class="btn dark" type="button" data-buy="${p.id}">Sofort kaufen</button>
-        </div>
-        <button class="linkbtn" type="button" data-fav="${p.id}" aria-pressed="${fav}">${fav ? 'Auf dem Merkzettel ✓' : 'Auf den Merkzettel'}</button>
-        <p class="dt-desc">${esc(p.desc)}</p>
-        <dl class="facts">${(p.facts || []).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
-        ${p.own ? `<button class="btn ghost" type="button" data-delown="${p.id}">${ic('trash')}Angebot entfernen</button>` : ''}
-      </div>
-    </div>`;
-  openDlg($('#dlgProduct'));
-}
-
-/* ---------- Warenkorb ---------- */
-const cartLines = () => Object.entries(S.cart).map(([id, q]) => ({ p: byId(id), q })).filter(l => l.p);
-function totals(express) {
-  const sub = cartLines().reduce((a, l) => a + l.p.price * l.q, 0);
-  const ship = sub ? (sub >= FREE ? 0 : SHIP) + (express ? EXPRESS : 0) : 0;
-  return { sub, ship, total: sub + ship };
-}
-function addToCart(id, n = 1) {
-  S.cart[id] = Math.min(99, (S.cart[id] || 0) + n);
-  saveCart(); updateBadges(); renderCart();
-}
-function renderCart() {
-  const L = cartLines();
-  const list = $('#cartList'), foot = $('#cartFoot');
-  if (!L.length) {
-    list.innerHTML = `<div class="cart-empty">${ic('cart')}<p><b>Dein Warenkorb ist leer.</b></p><p>Stöbere in den Kategorien oder sieh dir die Angebote an.</p><button class="btn" type="button" data-close>Weiter einkaufen</button></div>`;
-    foot.hidden = true;
-    return;
-  }
-  foot.hidden = false;
-  list.innerHTML = L.map(({ p, q }) => `<div class="cline">
-      <button class="thumb" type="button" data-open="${p.id}" style="--tint:${p.tint}" aria-label="${esc(p.name)} ansehen">${art(p)}</button>
-      <div class="cl-info">
-        <p class="cl-name">${esc(p.name)}</p>
-        <p class="seller">${esc(p.seller)} · ${eur.format(p.price)}</p>
-        <div class="stepper" role="group" aria-label="Menge ${esc(p.name)}">
-          <button type="button" data-qty="${p.id}" data-d="-1" aria-label="${q > 1 ? 'Eins weniger' : 'Entfernen'}">${ic(q > 1 ? 'minus' : 'trash')}</button>
-          <output>${q}</output>
-          <button type="button" data-qty="${p.id}" data-d="1" aria-label="Eins mehr">${ic('plus')}</button>
-        </div>
-      </div>
-      <p class="cl-price">${eur.format(p.price * q)}</p>
-    </div>`).join('');
-  const t = totals(false);
-  const rest = FREE - t.sub;
-  foot.innerHTML = `
-    <div class="freebar">${rest > 0 ? `<span>Noch <b>${eur.format(rest)}</b> bis zum kostenlosen Versand</span>` : `<span>${ic('check')} <b>Versandkostenfrei</b></span>`}<span class="bar"><span style="width:${Math.min(100, (t.sub / FREE) * 100)}%"></span></span></div>
-    <dl class="sum">
-      <div><dt>Zwischensumme</dt><dd>${eur.format(t.sub)}</dd></div>
-      <div><dt>Versand</dt><dd>${t.ship ? eur.format(t.ship) : 'kostenlos'}</dd></div>
-      <div class="tot"><dt>Gesamt <small>inkl. MwSt.</small></dt><dd>${eur.format(t.total)}</dd></div>
-    </dl>
-    <button class="btn wide" type="button" id="toCheckout">Zur Kasse</button>`;
-}
-function openCart() { renderCart(); openDlg($('#dlgCart')); }
-
-/* ---------- Kasse ---------- */
-const isExpress = () => $('#coShipExp').checked;
-function renderSummary() {
-  const t = totals(isExpress());
-  $('#coStdDate').textContent = `Lieferung ${stdRange()}`;
-  $('#coExpDate').textContent = `Lieferung ${fastDate()}`;
-  $('#coStdPrice').textContent = t.sub >= FREE ? 'kostenlos' : eur.format(SHIP);
-  $('#coSum').innerHTML = `
-    <h3>Deine Bestellung</h3>
-    <ul class="co-items">${cartLines().map(({ p, q }) => `<li><span>${q} × ${esc(p.name)}</span><span>${eur.format(p.price * q)}</span></li>`).join('')}</ul>
-    <dl class="sum">
-      <div><dt>Zwischensumme</dt><dd>${eur.format(t.sub)}</dd></div>
-      <div><dt>Versand</dt><dd>${t.ship ? eur.format(t.ship) : 'kostenlos'}</dd></div>
-      <div class="tot"><dt>Gesamt <small>inkl. MwSt.</small></dt><dd>${eur.format(t.total)}</dd></div>
-    </dl>
-    <button class="btn wide dark" type="submit">Bestellung abschicken</button>
-    <p class="demo-note">Demo-Shop: Es wird nichts bestellt und nichts berechnet.</p>`;
-}
-function openCheckout() {
-  if (!cartLines().length) return;
-  $('#coForm').hidden = false;
-  $('#coDone').hidden = true;
-  $('#coErr').hidden = true;
-  renderSummary();
-  $('#dlgCart').close();
-  openDlg($('#dlgCheckout'));
-}
-$('#coForm').addEventListener('change', e => { if (e.target.name === 'coShip') renderSummary(); });
-$('#coForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const f = e.currentTarget;
-  const bad = [...f.querySelectorAll('input[required]')].find(i => !i.checkValidity());
-  if (bad) {
-    const err = $('#coErr');
-    err.textContent = bad.id === 'coZip' ? 'Bitte gib eine fünfstellige Postleitzahl ein.' : `Bitte fülle das Feld „${f.querySelector(`label[for="${bad.id}"]`).textContent}“ aus.`;
-    err.hidden = false;
-    bad.focus();
-    return;
-  }
-  const express = isExpress();
-  const first = $('#coName').value.trim().split(/\s+/)[0];
-  const no = `FD-${new Date().getFullYear()}-${String(Math.floor(10000 + Math.random() * 89999))}`;
-  $('#doneTitle').textContent = `Danke, ${first}!`;
-  $('#doneNo').textContent = no;
-  $('#doneDate').textContent = express ? fastDate() : stdRange();
-  S.cart = {}; saveCart(); updateBadges(); renderCart();
-  f.hidden = true;
-  $('#coDone').hidden = false;
-  $('#dlgCheckout .dlg').scrollTop = 0;
-});
-
-/* ---------- Verkaufen ---------- */
-const parsePrice = v => { const n = parseFloat(String(v).replace(/\s|€/g, '').replace(',', '.')); return Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN; };
-function sellDraft() {
-  const f = $('#sellForm');
-  const sw = SWATCHES[+f.elements.sellCol.value] || SWATCHES[0];
-  const shop = f.sellShop.value.trim() || 'Dein Shop';
-  const city = f.sellCity.value.trim();
-  const price = parsePrice(f.sellPrice.value);
-  return {
-    id: 'u' + Date.now().toString(36), own: true, handmade: true,
-    name: f.sellName.value.trim() || 'Dein Artikel', seller: shop, city,
-    cat: f.sellCat.value, price: price > 0 ? price : 0, rating: 0, reviews: 0,
-    pic: f.elements.sellPic.value || 'mug', c: sw.c, d: sw.d, tint: sw.tint,
-    desc: f.sellDesc.value.trim() || 'Noch keine Beschreibung.',
-    facts: [['Verkauft von', shop], ['Kategorie', CATS[f.sellCat.value]], ['Versand aus', city || 'Deutschland']]
-  };
-}
-const renderPreview = () => { $('#sellPreview').innerHTML = card(sellDraft()); };
-function openSell() {
-  $('#sellErr').hidden = true;
-  renderPreview();
-  closeAll();
-  openDlg($('#dlgSell'));
-}
-$('#sellForm').addEventListener('input', renderPreview);
-$('#sellForm').addEventListener('change', renderPreview);
-$('#sellForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const f = e.currentTarget;
-  const err = $('#sellErr');
-  const price = parsePrice(f.sellPrice.value);
-  if (!f.sellName.value.trim()) { err.textContent = 'Gib deinem Artikel einen Namen.'; err.hidden = false; f.sellName.focus(); return; }
-  if (!(price > 0) || price > 100000) { err.textContent = 'Gib einen Preis ein, zum Beispiel 19,90.'; err.hidden = false; f.sellPrice.focus(); return; }
-  const p = sellDraft();
-  S.own.unshift(p); saveOwn();
-  f.reset(); renderPreview();
-  $('#dlgSell').close();
-  resetFilters(); S.sort = 'empf'; render(); toShop();
-  toast('Dein Artikel ist jetzt im Shop.', { label: 'Ansehen', run: () => openProduct(p.id) });
-});
-
-/* ---------- App-Installation ---------- */
-let deferredPrompt = null;
-// In der Claude-Vorschau (eingebettet) oder als lokale Datei kann sich die Seite nicht als App installieren.
-const notInstallableHere = (() => {
-  if (!/^https?:$/.test(location.protocol)) return true;
-  try { return window.self !== window.top; } catch (e) { return true; }
-})();
-// Die Android-App (WebView) meldet sich mit diesem Zusatz im User-Agent.
-const inApp = /FundusApp\//.test(navigator.userAgent);
-document.documentElement.classList.toggle('in-app', inApp);
-// Zurück-Taste der Android-App: zuerst das oberste offene Fenster schließen.
-window.fundusBack = () => {
-  const open = $$('dialog[open]');
-  if (!open.length) return false;
-  open[open.length - 1].close();
-  return true;
-};
-const isStandalone = () => inApp || matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-function platform() {
-  const ua = navigator.userAgent;
-  if (/iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'ios';
-  if (/Android/.test(ua)) return 'android';
-  return 'desktop';
-}
-function selectTab(name) {
-  $$('#dlgInstall [role="tab"]').forEach(t => {
-    const on = t.id === `tab-${name}`;
-    t.setAttribute('aria-selected', on);
-    t.tabIndex = on ? 0 : -1;
-    $('#' + t.getAttribute('aria-controls')).hidden = !on;
-  });
-}
-function updateInstallUI() {
-  const sa = isStandalone();
-  $('#appBtn').hidden = sa;
-  $('#apkBand').hidden = sa || platform() !== 'android';
-  $('#pwaBtn').hidden = !deferredPrompt;
-  $('#pwaSteps').hidden = !!deferredPrompt;
-  $('#installState').innerHTML = sa
-    ? `${ic('check')}Du nutzt Fundus gerade als App.`
-    : deferredPrompt ? `${ic('check')}Bereit zur Installation auf diesem Gerät.`
-    : notInstallableHere ? 'Zum Installieren den Shop im Browser öffnen.' : '';
-}
-async function promptInstall() {
-  const ev = deferredPrompt;
-  if (!ev) return;
-  deferredPrompt = null;
-  ev.prompt();
-  try { const r = await ev.userChoice; if (r.outcome === 'accepted') toast('Fundus wird installiert.'); } catch (e) { /* abgebrochen */ }
-  updateInstallUI();
-}
-async function install() {
-  if (isStandalone()) { toast('Du nutzt Fundus bereits als App.'); return; }
-  const pf = platform();
-  // Auf Android zuerst den APK-Download zeigen, sonst direkt Chromes Installationsdialog
-  if (deferredPrompt && pf !== 'android') { promptInstall(); return; }
-  const away = notInstallableHere && pf !== 'android';
-  $('#inAway').hidden = !away;
-  $('#inThen').hidden = !away;
-  selectTab(pf);
-  updateInstallUI();
-  closeAll();
-  openDlg($('#dlgInstall'));
-}
-$('#pwaBtn').addEventListener('click', () => { $('#dlgInstall').close(); promptInstall(); });
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; updateInstallUI(); });
-window.addEventListener('appinstalled', () => { deferredPrompt = null; closeAll(); toast('Fertig! Fundus liegt jetzt auf deinem Startbildschirm.'); updateInstallUI(); });
-$('#dlgInstall .tabs').addEventListener('click', e => { const t = e.target.closest('[role="tab"]'); if (t) selectTab(t.id.replace('tab-', '')); });
-$('#dlgInstall .tabs').addEventListener('keydown', e => {
-  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-  const tabs = $$('#dlgInstall [role="tab"]');
-  const i = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
-  const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
-  selectTab(next.id.replace('tab-', '')); next.focus();
-});
-try {
-  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-    navigator.serviceWorker.register('sw.js').catch(() => { /* ohne Offline-Modus weiter */ });
-  }
-} catch (e) { /* Umgebung ohne Service Worker */ }
-
-/* ---------- Klicks ---------- */
-document.addEventListener('click', e => {
-  const t = e.target.closest('button, a');
-  if (!t) return;
-  const ds = t.dataset;
-  if ('close' in ds) { t.closest('dialog')?.close(); return; }
-  if (ds.open) { openProduct(ds.open); return; }
-  if (ds.add) {
-    const n = ds.from === 'detail' ? dtQty : 1;
-    addToCart(ds.add, n);
-    const p = byId(ds.add);
-    if (ds.from === 'detail') $('#dlgProduct').close();
-    toast(`${n > 1 ? n + ' × ' : ''}${esc(p.name.split(',')[0])} liegt im Warenkorb.`, { label: 'Ansehen', run: openCart });
-    return;
-  }
-  if (ds.buy) { addToCart(ds.buy, dtQty); $('#dlgProduct').close(); openCheckout(); return; }
-  if (ds.dq) {
-    dtQty = Math.max(1, Math.min(99, dtQty + Number(ds.dq)));
-    $('#dtQty').textContent = dtQty;
-    return;
-  }
-  if (ds.fav) {
-    const id = ds.fav;
-    const on = !S.favs.has(id);
-    on ? S.favs.add(id) : S.favs.delete(id);
-    saveFavs(); updateBadges();
-    $$(`[data-fav="${id}"]`).forEach(b => {
-      b.setAttribute('aria-pressed', on);
-      if (b.classList.contains('fav')) b.setAttribute('aria-label', on ? 'Vom Merkzettel entfernen' : 'Auf den Merkzettel');
-      else b.textContent = on ? 'Auf dem Merkzettel ✓' : 'Auf den Merkzettel';
-    });
-    if (S.favsOnly) render();
-    return;
-  }
-  if (ds.qty) {
-    const id = ds.qty;
-    const q = (S.cart[id] || 0) + Number(ds.d);
-    if (q > 0) S.cart[id] = Math.min(99, q); else delete S.cart[id];
-    saveCart(); updateBadges(); renderCart();
-    return;
-  }
-  if (ds.cat) { S.cat = ds.cat; S.favsOnly = false; render(); return; }
-  if (ds.catlink) { resetFilters(); S.cat = ds.catlink; render(); toShop(); return; }
-  if (ds.tog) { S[ds.tog] = !S[ds.tog]; render(); return; }
-  if (ds.go) {
-    resetFilters();
-    if (ds.go === 'hand') S.hand = true;
-    if (ds.go === 'deals') S.deals = true;
-    if (ds.go === 'favs') S.favsOnly = true;
-    render(); toShop();
-    return;
-  }
-  if (ds.seller) { resetFilters(); S.q = ds.seller; closeAll(); render(); toShop(); return; }
-  if ('install' in ds) { install(); return; }
-  if ('sell' in ds) { openSell(); return; }
-  if (ds.delown) {
-    if (t.dataset.armed !== '1') { t.dataset.armed = '1'; t.innerHTML = `${ic('trash')}Wirklich entfernen? Nochmal tippen`; return; }
-    S.own = S.own.filter(p => p.id !== ds.delown); saveOwn();
-    delete S.cart[ds.delown]; saveCart();
-    S.favs.delete(ds.delown); saveFavs();
-    updateBadges(); closeAll(); render();
-    toast('Dein Angebot wurde entfernt.');
-    return;
-  }
-  if (t.id === 'toCheckout') { openCheckout(); return; }
-  if (t.id === 'cartBtn') { openCart(); return; }
-  if (t.id === 'favBtn') { resetFilters(); S.favsOnly = true; render(); toShop(); return; }
-  if (t.id === 'resetBtn') { resetFilters(); render(); return; }
-});
-
-/* ---------- Suche & Sortierung ---------- */
-let searchTimer;
-$('#q').addEventListener('input', e => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { S.q = e.target.value; S.favsOnly = false; render(); }, 150); });
-$('#searchForm').addEventListener('submit', e => { e.preventDefault(); S.q = $('#q').value; S.favsOnly = false; render(); $('#q').blur(); toShop(); });
-$('#searchCat').addEventListener('change', e => { S.cat = e.target.value; render(); });
-$('#sort').addEventListener('change', e => { S.sort = e.target.value; render(); });
-
-/* ---------- Start ---------- */
-$$('i[data-ic]').forEach(i => { i.outerHTML = ic(i.dataset.ic); });
-const catOpts = Object.entries(CATS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('');
-$('#searchCat').innerHTML = `<option value="alle">Alle Kategorien</option>${catOpts}`;
-$('#sellCat').innerHTML = catOpts;
-$('#footCats').innerHTML = Object.entries(CATS).slice(0, 5).map(([k, l]) => `<li><button class="linkbtn" type="button" data-catlink="${k}">${l}</button></li>`).join('');
-$('#picks').innerHTML = Object.keys(ART).map((k, i) => `<label class="pick" title="${PIC_NAMES[k]}"><input type="radio" name="sellPic" value="${k}"${i ? '' : ' checked'} aria-label="${PIC_NAMES[k]}">${art({ pic: k, c: '#5E7F5B', d: '#D9CBB0' })}</label>`).join('');
-$('#swatches').innerHTML = SWATCHES.map((s, i) => `<label class="swatch"><input type="radio" name="sellCol" value="${i}"${i ? '' : ' checked'}><i style="--c:${s.c};--d:${s.d}"></i>${s.name}</label>`).join('');
-$('#collage').innerHTML = ['p1', 'p4', 'p6', 'p2'].map(byId).map(p => `<div class="tile" style="--tint:${p.tint}">${art(p)}</div>`).join('');
-$('#heroDevice').outerHTML = device();
-$('#bandDevice').outerHTML = device();
-
-const header = $('#top');
-const setHH = () => document.documentElement.style.setProperty('--hh', header.offsetHeight + 'px');
-setHH();
-if ('ResizeObserver' in window) new ResizeObserver(setHH).observe(header);
-
-render();
-updateBadges();
-renderCart();
-updateInstallUI();
-})();
-</script>
+<script src="js/art.js" defer></script>
+<script src="js/db.js" defer></script>
+<script src="js/app.js" defer></script>
+<script src="js/fx.js" defer></script>
+<script src="js/auth.js" defer></script>
+<script src="js/checkout.js" defer></script>
+<script src="js/admin.js" defer></script>
 </body>
 </html>
