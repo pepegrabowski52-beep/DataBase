@@ -8,8 +8,10 @@ Alles steckt in einer einzigen Datei (`index.html`), es gibt nichts zu installie
 - Suche, Kategorien, Filter (Handgemacht, Morgen da, Angebote) und Sortierung
 - Produktdetails, Merkzettel, Warenkorb mit Versandkosten-Anzeige und Kasse (Demo, es wird nichts bestellt)
 - Eigene Artikel einstellen wie bei Etsy („Artikel einstellen“)
-- **App herunterladen:** Die Seite ist eine installierbare Web-App (PWA). Über „App laden“ landet Fundus
-  mit eigenem Symbol auf dem Startbildschirm von iPad, iPhone, Android oder Computer und läuft auch offline.
+- **App herunterladen:**
+  - **Android:** echte App als Datei `fundus.apk` (unter 100 KB) zum Herunterladen und Installieren.
+  - **Alle Geräte:** Die Seite ist außerdem eine installierbare Web-App (PWA). Über „App laden“ landet Fundus
+    mit eigenem Symbol auf dem Startbildschirm von iPad, iPhone, Android oder Computer und läuft auch offline.
 
 Warenkorb, Merkzettel und eigene Artikel werden im Browser des Geräts gespeichert.
 
@@ -37,4 +39,5 @@ Auf iPad und iPhone erlaubt Apple keinen Ein-Tipp-Download. Dort zeigt die Seite
 | `index.html` | Der komplette Shop (Aussehen, Produkte, Logik) |
 | `manifest.webmanifest` | Name, Farben und Symbole der App |
 | `sw.js` | Service Worker für den Offline-Modus |
+| `fundus.apk` | Android-App (gebaut aus dem Ordner `android/`) |
 | `icons/` | App-Symbole |
