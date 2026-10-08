@@ -65,12 +65,21 @@ ohne Build-Schritt, ohne Abhängigkeiten. Einfach `index.html` öffnen und spiel
 | 16 | Demon Gate | Demon ★12 | alles zusammen |
 | 17 | Nightmare | Hard Demon ★13 | 2x–4x, Dual, Spiegel, enge Tunnel |
 | 18 | Overload | Insane Demon ★14 | 3x/4x-Wave, Teleport-Fallen, Mini- und Dual-Wave |
-| 19 | Event Horizon | Extreme Demon ★15 | das Finale: alle Modi, Dash-Orbs, Dual, Spiegel, Teleport *(in Arbeit)* |
+| 19 | Event Horizon | Extreme Demon ★15 | das Finale: alle Modi, Dash-Orbs, Dual, Spiegel, Teleport |
 | ? | The Challenge | Demon ★10 | geheim – Code im Vault: `the challenge` |
 
 Jedes Level wurde automatisch mit einem Solver geprüft: es ist schaffbar, alle drei Münzen sind in einem
 Durchlauf einsammelbar, kein Klick erfordert ein Zeitfenster unter 3 Frames (bei 60 FPS) und kein Portal
-lässt sich umgehen (z. B. indem man über einen Abschnitt hinwegfliegt).
+lässt sich umgehen (z. B. indem man über einen Abschnitt hinwegfliegt). Zusätzlich sucht `tools/autopilot.js`
+nach „Autopilot“-Stellen, an denen man in einem Flugmodus nur mit Dauerhalten oder Nichtstun durchkäme.
+
+**∞ Endless-Modus** (Hauptmenü → *Endless*)
+* Ein unendliches Level, das beim Spielen laufend aus über 30 Bausteinen zusammengesetzt wird – jeder Lauf ist anders
+* 5 Stages: alle paar hundert Meter wird es schneller (1x bis 4x), neue Modi kommen dazu (Ship, UFO, Wave, Ball,
+  Spider, Swing, Robot, Mini) und Farben wechseln, mit Stage-Banner
+* Punkte = zurückgelegte Meter (Blöcke); Bestweite, Anzahl Läufe und eigene Erfolge (*Marathon*, *Ultra Marathon*)
+* Jeder Baustein ist bei jeder Geschwindigkeit vom Solver geprüft (schaffbar, kein Klick unter 3 Frames, kein
+  Autopilot), siehe `tools/endless-check.js` – nur geprüfte Varianten kommen ins Spiel
 
 **Drumherum**
 * Hauptmenü, Levelauswahl mit Fortschrittsbalken, Pausemenü, „Level Complete“-Bildschirm
@@ -86,6 +95,7 @@ lässt sich umgehen (z. B. indem man über einen Abschnitt hinwegfliegt).
 * Optionen: Musik/SFX-Lautstärke, Prozentanzeige, Fortschrittsbalken, Auto-Checkpoints, FPS, Hitboxen, *Fast Respawn*,
   *Low Detail Mode* (rendert auch in geringerer Auflösung für schwache Handys)
 * Verschiedene Hintergründe und Böden je Level (auch im Editor wählbar)
+* Effekte: Bildschirm-Blitz bei Portalen, Tempo- und Teleport-Wechseln, Speed-Lines bei 3x/4x, Partikel an Portalen und Pads
 
 **Level-Editor** (Menü → *Create*)
 * Bauen / Bearbeiten / Löschen wie im Original, alle Objekte, Trigger und Startpositionen
@@ -105,6 +115,8 @@ js/objects.js       Objektkatalog mit Hitboxen
 js/levelfmt.js      ASCII-Levelformat und Generatoren
 js/levels.js        die 15 klassischen Level
 js/levels/*.js      weitere Level (je eine Datei, mit eigenem Song)
+js/endless.js       Endless-Modus: Bausteine, Stages, Generator
+js/endless-verified.js  vom Prüfskript erzeugte Liste der geprüften Endless-Bausteine
 js/engine.js        deterministische Physik (240 Hz), Kollisionen, Trigger
 js/game.js          Spielsitzung: Kamera, Tod/Neustart, Übungsmodus, Effekte
 js/render.js        Canvas-Renderer, Partikel, HUD
@@ -113,6 +125,8 @@ js/audio.js         Synthesizer, Sequencer, Songs, Soundeffekte
 js/editor.js        Level-Editor
 js/ui.js, main.js   Menüs, Dialoge, Eingabe, Hauptschleife
 tools/solve.js      Solver zur Level-Prüfung (Node.js)
+tools/autopilot.js  findet Flugpassagen, die man mit konstanter Eingabe schafft
+tools/endless-check.js  prüft alle Endless-Bausteine und schreibt js/endless-verified.js
 tools/engine-tests.js  Regressionstests für Physik-Sonderfälle (Schrägen, Teleport, Dual, Dash)
 tools/bundle.js     baut das ganze Spiel als eine einzige HTML-Datei
 ```
@@ -125,6 +139,8 @@ node tools/solve.js polar -v        # ein Level, alle Klick-Zeitfenster anzeigen
 node tools/solve.js --file mein.gdlevel.json
 node tools/solve.js demon --modes      # zusätzlich Modus/Tempo/Korridor entlang der Lösung anzeigen
 node tools/engine-tests.js             # Physik-Regressionstests
+node tools/autopilot.js wave demon     # Autopilot-Stellen in Flugmodi finden
+node tools/endless-check.js --runs 2   # Endless-Bausteine prüfen (+ 2 komplette Läufe lösen)
 node tools/bundle.js GeometryDash.html # Spiel als eine Datei (zum Weitergeben / offline öffnen)
 node tools/solve.js --seg "..o.... ....... ^^^^^^.."   # ein einzelnes Muster testen (Zeilen durch Leerzeichen getrennt)
 ```

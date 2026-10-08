@@ -124,5 +124,31 @@ for (const mode of ['ship', 'ufo', 'wave', 'ball', 'swing']) {
   check('dash orb: dash while held, fall after release', dashed && fell && !w.p.dead);
 }
 
+// ---------------------------------------------------------------- world.append (endless mode)
+{
+  // a level built in two halves (second half appended while playing) must play exactly like the whole level
+  const map = [8, '..^...##....^^..', 6, '.....o....\n..........\n..^^^^^^^.', 6, { t: 'pShip', at: 0, y: 1 }, 30, { t: 'pCube', at: 0, y: 1 }, 10, '..^...', 20];
+  const all = GD.parseMap(map);
+  const cut = 40 * 30;
+  const a = all.filter((o) => o.x < cut), b = all.filter((o) => o.x >= cut);
+  const run = (split) => {
+    const w = new GD.World({ objects: split ? a.map((o) => Object.assign({}, o)) : all.map((o) => Object.assign({}, o)), settings: { mode: 'cube', spd: 1 } }, {});
+    w.die = () => {}; // invincible, so the run crosses the cut
+    w.endX = Infinity; // like endless mode
+    let appended = !split;
+    const trace = [];
+    for (let i = 0; i < 6000 && !w.p.dead && w.p.x < 2600; i++) {
+      if (!appended && w.p.x > cut - 600) { w.append(b.map((o) => Object.assign({}, o))); appended = true; }
+      w.setHold(Math.floor(i / 37) % 3 === 0);
+      w.step();
+      if (i % 50 === 0) trace.push(w.p.x.toFixed(2) + ',' + w.p.y.toFixed(2) + ',' + w.p.mode);
+    }
+    return { trace: trace.join(' '), x: w.p.x, modes: new Set(trace.map((t) => t.split(',')[2])).size };
+  };
+  const whole = run(false), split = run(true);
+  check('appending objects while playing equals building the level at once',
+    whole.trace === split.trace && whole.x >= 2600 && whole.modes > 1, `same=${whole.trace === split.trace} x=${whole.x} modes=${whole.modes}`);
+}
+
 console.log(failed ? `\n${failed} test(s) failed` : '\nall engine tests passed');
 process.exit(failed ? 1 : 0);

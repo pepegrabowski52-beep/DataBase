@@ -60,6 +60,7 @@
     glass: { name: 'Looking Glass', bpm: 138, root: 61, scale: 'harmonic', prog: [0, 5, 3, 4], seed: 149, lead: 'pluck', bass: 'driving', drums: 'half', arr: 'std', loopFrom: 2 },
     velocity: { name: 'Velocity', bpm: 180, root: 52, scale: 'minor', prog: [0, 6, 5, 4], seed: 157, lead: 'saw', bass: 'driving', drums: 'break', arr: 'fast', loopFrom: 2 },
     demon: { name: 'Demon Gate', bpm: 175, root: 50, scale: 'harmonic', prog: [0, 5, 1, 4], seed: 113, lead: 'square', bass: 'wobble', drums: 'break', arr: 'fast', loopFrom: 2 },
+    endless: { name: 'Endless', bpm: 160, root: 55, scale: 'minor', prog: [0, 5, 3, 6], seed: 199, lead: 'saw', bass: 'driving', drums: 'break', arr: 'fast', loopFrom: 2 },
     menu: { name: 'Menu Loop', bpm: 122, root: 53, scale: 'major', prog: [0, 5, 3, 4], seed: 7, lead: 'chip', bass: 'octave', drums: 'four', arr: 'menu', loopFrom: 1 },
     practice: { name: 'Practice', bpm: 96, root: 60, scale: 'major', prog: [0, 3, 5, 4], seed: 5, lead: 'pluck', bass: 'long', drums: 'none', arr: 'chill', loopFrom: 0 },
     editor: { name: 'Editor', bpm: 110, root: 57, scale: 'dorian', prog: [0, 3, 6, 4], seed: 3, lead: 'pluck', bass: 'long', drums: 'none', arr: 'chill', loopFrom: 0 },

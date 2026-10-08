@@ -118,6 +118,17 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 }
 .mbtn.side canvas, .mbtn.side svg { width: 78%; height: 78%; }
 .menu-labels { display: grid; grid-template-columns: calc(var(--u) * 18) calc(var(--u) * 30) calc(var(--u) * 18); gap: calc(var(--u) * 5); text-align: center; font-size: calc(var(--u) * 3); text-shadow: var(--outline-thin); margin-top: calc(var(--u) * 1.5); }
+.gbtn.endless-btn {
+  margin-top: calc(var(--u) * 2.5);
+  font-size: calc(var(--u) * 3.6);
+  padding: calc(var(--u) * 1.1) calc(var(--u) * 4.5);
+  background: linear-gradient(100deg, #ff4fd8, #7a5cff 35%, #2fd2ff 65%, #6dff6a);
+  background-size: 300% 100%;
+  border-color: #1a0a3a;
+  animation: endlessflow 6s linear infinite;
+}
+.gbtn.endless-btn small { display: block; font-size: calc(var(--u) * 2); opacity: 0.9; margin-top: calc(var(--u) * 0.2); }
+@keyframes endlessflow { from { background-position: 0% 0; } to { background-position: 300% 0; } }
 
 .corner { position: absolute; display: flex; gap: calc(var(--u) * 2); }
 .corner.bl { left: calc(var(--u) * 3); bottom: calc(var(--u) * 3); }
@@ -272,6 +283,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .pause-title { font-size: calc(var(--u) * 6); text-shadow: var(--outline); text-align: center; }
 .pbars { display: flex; flex-direction: column; gap: calc(var(--u) * 1.2); align-items: center; }
 .pbars .pbar { width: min(70vw, calc(var(--u) * 80)); }
+.pend { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 0.6); text-shadow: var(--outline-thin); }
+.pend b { font-size: calc(var(--u) * 6); color: #ffe25a; }
+.pend span { font-size: calc(var(--u) * 2.8); opacity: 0.9; }
 .pause-row { display: flex; gap: calc(var(--u) * 4); align-items: center; justify-content: center; margin: calc(var(--u) * 1) 0; }
 .sliders { display: flex; gap: calc(var(--u) * 5); font-size: calc(var(--u) * 3); text-shadow: var(--outline-thin); flex-wrap: wrap; justify-content: center; }
 .sliders label { display: flex; align-items: center; gap: calc(var(--u) * 1.5); }

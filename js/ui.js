@@ -128,6 +128,7 @@
       $('b-settings').addEventListener('click', () => { this.click(); this.settings(); });
       $('b-stats').addEventListener('click', () => { this.click(); this.stats(); });
       $('b-vault').addEventListener('click', () => { this.click(); this.vault(); });
+      $('b-endless').addEventListener('click', () => { this.click(); this.app.startEndless(); });
       $('lv-gauntlets').addEventListener('click', () => { this.click(); this.show('gauntlets'); });
       $('b-help').addEventListener('click', () => { this.click(); this.help(); });
       $('b-full').addEventListener('click', () => { this.click(); this.fullscreen(); });
@@ -244,6 +245,8 @@
 
     // -------------------------------------------------------------- main menu
     renderMenu() {
+      const eb = Math.floor(+((this.app.save.endless && this.app.save.endless.best) || 0)) || 0;
+      $('b-endless').innerHTML = '∞ Endless' + (eb ? `<small>Best ${eb} m</small>` : '');
       const ic = this.app.save.icons;
       const c = $('c-iconbtn');
       const g = c.getContext('2d');
@@ -392,12 +395,17 @@
       const s = this.app.save.settings;
       $('p-title').textContent = game.info.name;
       const rec = this.app.save.levels[game.info.id] || {};
-      $('p-bars').innerHTML = game.opts.test ? '' : this.barHTML('Normal Mode', rec.best || 0, false) + this.barHTML('Practice Mode', rec.pbest || 0, true);
+      if (game.info.endless) {
+        const e = this.app.save.endless || {};
+        $('p-bars').innerHTML = `<div class="pend"><b>${Math.max(0, Math.floor(game.world.p.x / 30))} m</b><span>Best ${Math.floor(+e.best || 0)} m · ${Math.floor(+e.runs || 0)} runs</span></div>`;
+      } else {
+        $('p-bars').innerHTML = game.opts.test ? '' : this.barHTML('Normal Mode', rec.best || 0, false) + this.barHTML('Practice Mode', rec.pbest || 0, true);
+      }
       $('p-music').value = Math.round(s.music * 100);
       $('p-sfx').value = Math.round(s.sfx * 100);
       document.querySelectorAll('[data-set]').forEach((el) => (el.checked = !!s[el.dataset.set]));
       $('p-practice').classList.toggle('on', game.practice);
-      $('p-practice').classList.toggle('hidden', !!game.opts.test);
+      $('p-practice').classList.toggle('hidden', !!game.opts.test || !!game.info.endless);
     },
 
     showComplete(game) {
@@ -799,7 +807,7 @@
       this.dialog('Stats', `<div class="stats-grid">
         ${row('Total Jumps', st.jumps)}${row('Total Attempts', st.attempts)}${row('Deaths', st.deaths)}
         ${row('Completed Levels', st.completed)}${row('Stars', t.stars + ' / ' + t.maxStars)}${row('Secret Coins', t.coins + ' / ' + t.maxCoins)}
-        ${row('Created Levels', this.app.userLevels.length)}</div>`, [
+        ${row('Created Levels', this.app.userLevels.length)}${row('Endless Best', ((this.app.save.endless && this.app.save.endless.best) || 0) + ' m')}</div>`, [
         { label: 'Achievements', cls: 'blue', fn: () => { setTimeout(() => this.achievements(), 10); } },
         { label: 'Levels', cls: 'pink', fn: () => { setTimeout(() => this.levelStats(), 10); } },
         { label: 'OK' },
@@ -840,7 +848,8 @@
         <b>Swing</b> flips gravity in mid-air.</p>
         <p><b>Dual portals</b> split you into two mirrored players controlled by the same button – both must survive.
         <b>Mirror portals</b> flip the screen.</p>
-        <p>Orbs work when you click while touching them; pads launch you automatically. Collect the 3 secret coins in each level!</p>`, [{ label: 'OK' }]);
+        <p>Orbs work when you click while touching them; pads launch you automatically. Collect the 3 secret coins in each level!</p>
+        <p><b>∞ Endless</b> builds a new level while you play – how far can you get? It speeds up every few hundred metres.</p>`, [{ label: 'OK' }]);
     },
   });
 })(window);

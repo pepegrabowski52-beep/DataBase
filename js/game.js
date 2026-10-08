@@ -15,8 +15,8 @@
       this.r = app.renderer;
       this.info = info;
       this.opts = opts || {};
-      this.practice = !!this.opts.practice;
-      this.world = new GD.World(info.level, { fx: true, startPos: this.opts.startPos });
+      this.practice = !!this.opts.practice && !info.endless;
+      this.world = info.endless ? this.makeEndlessWorld() : new GD.World(info.level, { fx: true, startPos: this.opts.startPos });
       this.startSnap = this.world.snap();
       this.cam = { x: 0, y: -90 };
       this.vis = { floor: 0, ceil: null };
@@ -37,6 +37,9 @@
       this.fpsT = 0;
       this.fpsN = 0;
       this.fps = 60;
+      this.lines = []; // speed lines (screen space)
+      this.flash = null; // coloured screen-edge flash
+      this.banner = null; // big centred text (endless stages)
       const rec = this.record();
       if (rec) this.attempt = (rec.att || 0) + 1;
       this.startAttempt(true);
@@ -51,8 +54,21 @@
       return this.app.save.settings;
     }
 
+    /** Endless mode: a fresh random run (the generator keeps extending it while playing). */
+    makeEndlessWorld() {
+      const seed = ((Date.now() & 0xffffff) ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
+      this.gen = new GD.Endless(seed);
+      const w = new GD.World({ settings: this.info.level.settings, objects: this.gen.until(170) }, { fx: true });
+      w.endX = Infinity;
+      return w;
+    }
+
     // ------------------------------------------------------------------ attempts
     startAttempt(first) {
+      if (this.info.endless && !first) {
+        this.world = this.makeEndlessWorld();
+        this.startSnap = this.world.snap();
+      }
       const w = this.world;
       if (this.practice && this.checkpoints.length) {
         const cp = this.checkpoints[this.checkpoints.length - 1];
@@ -63,6 +79,11 @@
         if (!this.practice || first) this.playMusic(first);
       }
       if (first) this.attemptX = w.p.x;
+      this.stage = 0;
+      this.milestone = 0;
+      this.passedBest = false;
+      this.runNo = ((this.app.save.endless && this.app.save.endless.runs) || 0) + 1;
+      this.banner = null;
       w.setHold(this.app.input.hold);
       w.pressQ = false;
       this.state = 'play';
@@ -156,6 +177,8 @@
       if (this.state === 'play') {
         this.playTime += dt;
         this.acc += dt;
+        // endless: keep about 120 blocks of level ahead of the player
+        if (this.gen && w.p.x / 30 + 120 > this.gen.col) w.append(this.gen.until(Math.ceil(w.p.x / 30) + 170));
         while (this.acc >= DT) {
           this.acc -= DT;
           this.prev.x = w.p.x;
@@ -170,6 +193,7 @@
         }
         if (this.state === 'play') {
           this.emitTrails(dt);
+          if (this.gen) this.endlessProgress();
           if (this.practice && this.settings.autoCP && w.t - this.lastCP > 3 && this.safeForCP()) this.placeCheckpoint();
         }
       } else if (this.state === 'dead') {
@@ -194,6 +218,9 @@
         this.r.m += Math.sign(d) * Math.min(Math.abs(d), dt * 4);
       }
       this.updateCamera(dt);
+      this.speedLines(dt);
+      if (this.flash) this.flash.t += dt;
+      if (this.banner) this.banner.t += dt;
       this.ambient(dt);
       this.r.updateParticles(dt);
     }
@@ -296,7 +323,18 @@
           case 'gravity': {
             const o = w.objs[e.obj];
             r.ring(o.x + o.ox, o.y + o.oy, 10, 60, 0.4, o.def.c || '#fff', 3);
-            if (e.mode) this.trail.length = 0;
+            if (e.mode) {
+              this.trail.length = 0;
+              this.flashFx(o.def.c, 0.32, 0.35);
+              r.burst(o.x + o.ox, o.y + o.oy, 12, o.def.c || '#fff', 260, 0.45, 3.5, { shape: 'ci', add: true, drag: 2.5 });
+            } else if (e.type === 'gravity') this.flashFx(o.def.c, 0.22, 0.25);
+            break;
+          }
+          case 'speed': {
+            const o = w.objs[e.obj];
+            r.ring(o.x + o.ox, o.y + o.oy, 10, 70, 0.45, o.def.c || '#fff', 3);
+            r.burst(o.x + o.ox, o.y + o.oy, 14, o.def.c || '#fff', 340, 0.4, 3, { shape: 'ci', add: true, drag: 3 });
+            this.flashFx(o.def.c, 0.25, 0.3);
             break;
           }
           case 'coin': {
@@ -313,6 +351,7 @@
             r.ring(a.x + a.ox, a.y + a.oy, 10, 60, 0.4, a.def.c, 3);
             r.ring(b.x + b.ox, b.y + b.oy, 60, 8, 0.4, b.def.c, 3);
             r.burst(e.tx, e.ty, 14, b.def.c, 260, 0.45, 4, { shape: 'ci', add: true, drag: 2 });
+            this.flashFx(b.def.c, 0.28, 0.3);
             this.trail.length = 0;
             this.trail2.length = 0;
             this.prev.x = w.p.x; this.prev.y = w.p.y;
@@ -326,10 +365,123 @@
             break;
           case 'death':
             this.deathFx(e.x, e.y); // the event knows which player (dual) crashed
+            this.flashFx('#ffffff', 0.28, 0.3);
             break;
         }
       }
       ev.length = 0;
+    }
+
+    /** Coloured flash from the screen edges (portals, speed changes, deaths). */
+    flashFx(color, alpha, dur) {
+      if (this.r.lowDetail) return;
+      this.flash = { c: U.hexToRgb(color || '#ffffff'), a: alpha, d: dur, t: 0 };
+    }
+
+    drawFlash() {
+      const f = this.flash;
+      if (!f) return;
+      const k = 1 - f.t / f.d;
+      if (k <= 0) { this.flash = null; return; }
+      const r = this.r, ctx = r.ctx;
+      const g = ctx.createRadialGradient(r.W / 2, r.H / 2, Math.min(r.W, r.H) * 0.22, r.W / 2, r.H / 2, Math.hypot(r.W, r.H) * 0.55);
+      g.addColorStop(0, U.rgba(f.c, 0));
+      g.addColorStop(1, U.rgba(f.c, f.a * k * k));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, r.W, r.H);
+    }
+
+    /** Speed lines rushing past at 3x and 4x speed. */
+    speedLines(dt) {
+      const p = this.world.p, L = this.lines;
+      const k = this.state === 'play' && !this.r.lowDetail ? Math.max(0, p.spd - 2) : 0;
+      if (k && Math.random() < dt * 26 * k) {
+        L.push({ y: 0.08 + Math.random() * 0.84, x: 1.05, len: 0.06 + Math.random() * 0.16, v: 2.4 + Math.random() * 1.8, a: 0.07 + Math.random() * 0.1 * k });
+      }
+      let j = 0;
+      for (const l of L) {
+        l.x -= l.v * dt;
+        if (l.x + l.len > -0.02) L[j++] = l;
+      }
+      L.length = j;
+    }
+
+    drawLines() {
+      const L = this.lines;
+      if (!L.length) return;
+      const r = this.r, ctx = r.ctx, flip = r.m < 0;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineCap = 'round';
+      for (const l of L) {
+        const x0 = l.x * r.W, x1 = (l.x + l.len) * r.W, y = l.y * r.H;
+        ctx.globalAlpha = l.a;
+        ctx.lineWidth = (1 + l.a * 14) * r.dpr;
+        ctx.beginPath();
+        ctx.moveTo(flip ? r.W - x0 : x0, y);
+        ctx.lineTo(flip ? r.W - x1 : x1, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    /** Endless: a glowing line where the best run ended. */
+    drawBestMarker() {
+      const best = (this.app.save.endless && this.app.save.endless.best) || 0;
+      if (best < 20) return;
+      const r = this.r, ctx = r.ctx, x = r.sx(best * 30);
+      if (x < -60 || x > r.W + 60) return;
+      const passed = this.passedBest;
+      ctx.save();
+      const gr = ctx.createLinearGradient(x - 26 * r.S, 0, x + 4 * r.S, 0);
+      gr.addColorStop(0, 'rgba(255,210,58,0)');
+      gr.addColorStop(1, passed ? 'rgba(255,255,255,0.18)' : 'rgba(255,210,58,0.35)');
+      ctx.fillStyle = gr;
+      ctx.fillRect(x - 26 * r.S, 0, 30 * r.S, r.H);
+      ctx.fillStyle = passed ? 'rgba(255,255,255,0.5)' : '#ffd23a';
+      for (let y = 0; y < r.H; y += 14 * r.S) ctx.fillRect(x - 1.5 * r.S, y, 3 * r.S, 8 * r.S);
+      ctx.restore();
+      r.text('BEST', x, r.H * 0.2, 11 * r.S, { gold: !passed, alpha: passed ? 0.6 : 1 });
+    }
+
+    /** Endless: stage banners and distance milestones. */
+    endlessProgress() {
+      const bx = this.world.p.x / 30;
+      const st = this.gen.tierAt(bx);
+      if (st > this.stage) {
+        this.stage = st;
+        const T = GD.ENDLESS_TIERS[st];
+        this.banner = { text: 'STAGE ' + (st + 1), sub: ['', 'Warming up', 'Speeding up', 'Getting serious', 'Overdrive'][st] || '', t: 0, c: T.bg };
+        this.flashFx(T.bg, 0.55, 0.7);
+        GD.Audio.sfx('unlock');
+      }
+      const best = (this.app.save.endless && this.app.save.endless.best) || 0;
+      if (!this.passedBest && best >= 50 && bx > best) {
+        // beating the record during the run
+        this.passedBest = true;
+        if (!this.banner) this.banner = { text: 'NEW RECORD!', sub: 'Keep going!', t: 0 };
+        GD.Audio.sfx('star');
+        const p = this.world.p;
+        this.r.burst(p.x, p.y, 24, '#ffd23a', 380, 0.8, 4, { shape: 'ci', add: true, drag: 1.5 });
+      }
+      const m = Math.floor(bx / 100);
+      if (m > this.milestone) {
+        this.milestone = m;
+        this.mileT = this.time;
+        if (m % 5 === 0 && st === this.stage) GD.Audio.sfx('checkpoint');
+      }
+    }
+
+    drawBanner() {
+      const b = this.banner;
+      if (!b) return;
+      if (b.t > 2.2) { this.banner = null; return; }
+      const r = this.r;
+      const kin = U.ease.elastic(U.clamp(b.t / 0.5, 0, 1));
+      const a = b.t > 1.6 ? 1 - (b.t - 1.6) / 0.6 : 1;
+      r.text(b.text, r.W / 2, r.H * 0.3, r.hs * 30 * kin, { gold: true, alpha: a });
+      if (b.sub) r.text(b.sub, r.W / 2, r.H * 0.3 + r.hs * 26, r.hs * 12, { alpha: a * U.clamp((b.t - 0.25) / 0.3, 0, 1) });
     }
 
     deathFx(ex, ey) {
@@ -471,6 +623,16 @@
       GD.Audio.sfx('death');
       if (!this.practice) GD.Audio.stop(0.05);
       if (!this.opts.test) this.app.save.stats.deaths++;
+      if (this.info.endless) {
+        // endless: the score is the distance in blocks
+        const dist = Math.floor(w.p.x / 30);
+        const e = (this.app.save.endless = this.app.save.endless || { best: 0, runs: 0 });
+        e.runs++;
+        if (dist > e.best) { e.best = dist; this.newBest = dist; this.newBestT = this.time; }
+        this.app.save.stats.attempts++;
+        this.app.persist();
+        return;
+      }
       const pct = Math.floor(w.progress() * 100);
       const rec = this.record();
       if (rec && !this.opts.test) {
@@ -558,12 +720,14 @@
       const t = this.time;
       const st = w.settings;
       r.drawBg(cols, cam, 0, st.bgStyle);
+      this.drawLines();
       // attempt label floats in the world
       if (this.attemptX != null && this.attemptX < cam.x + r.VW + 400) {
-        r.worldText('Attempt ' + this.attempt, this.attemptX + 210, (w.bnd.ceil != null ? (w.bnd.floor + w.bnd.ceil) / 2 : 130) + 25, 24, {});
+        r.worldText(this.gen ? 'Run ' + this.runNo : 'Attempt ' + this.attempt, this.attemptX + 210, (w.bnd.ceil != null ? (w.bnd.floor + w.bnd.ceil) / 2 : 130) + 25, 24, {});
       }
       r.drawWorldObjects(w, cols, t, pulse);
       this.drawEnd(cols);
+      if (this.gen) this.drawBestMarker();
       if (this.practice) {
         for (const cp of this.checkpoints) {
           const sp = r.sprite('cp', 24, (g) => {
@@ -596,17 +760,31 @@
       r.drawGround(cols, cam, this.vis.floor, false, pulse, st.gStyle);
       if (this.vis.ceil != null && this.vis.ceil < cam.y + r.VH + 40) r.drawGround(cols, cam, this.vis.ceil, true, pulse, st.gStyle);
       r.drawParticles();
+      this.drawFlash();
+      this.drawBanner();
       if (this.state === 'complete') {
         const k = U.clamp(this.doneT / 0.5, 0, 1);
         const sc = U.ease.elastic(k);
         r.text(this.practice ? 'PRACTICE COMPLETE!' : 'LEVEL COMPLETE!', r.W / 2, r.H * 0.38, r.hs * 34 * sc, { gold: true });
       }
       if (this.newBest != null && this.time - this.newBestT < 1.2 && this.state === 'dead') {
-        r.text(this.newBest + '%', r.W / 2, r.H * 0.42, r.hs * 34, { gold: true, alpha: 1 - (this.time - this.newBestT) / 1.4 });
+        r.text(this.newBest + (this.info.endless ? ' m' : '%'), r.W / 2, r.H * 0.42, r.hs * 34, { gold: true, alpha: 1 - (this.time - this.newBestT) / 1.4 });
         r.text('NEW BEST!', r.W / 2, r.H * 0.42 - r.hs * 30, r.hs * 18, { alpha: 1 - (this.time - this.newBestT) / 1.4 });
       }
-      r.progressBar(w.progress(), this.settings.showBar, this.settings.showPct);
+      if (this.info.endless) this.drawEndlessHud();
+      else r.progressBar(w.progress(), this.settings.showBar, this.settings.showPct);
       if (this.settings.showFps) r.text(this.fps + ' FPS', 8 * r.dpr, r.H - 12 * r.dpr, 12 * r.dpr, { align: 'left' });
+    }
+
+    /** Endless HUD: distance, best distance and the current stage. */
+    drawEndlessHud() {
+      const r = this.r, s = r.hs, w = this.world;
+      const dist = Math.max(0, Math.floor(w.p.x / 30));
+      const best = (this.app.save.endless && this.app.save.endless.best) || 0;
+      const mk = this.mileT != null ? U.clamp(1 - (this.time - this.mileT) / 0.45, 0, 1) : 0;
+      r.text(dist + ' m', r.W / 2, 16 * s + mk * 4 * s, 20 * s * (1 + 0.45 * mk), { gold: mk > 0 || (dist > best && best > 0) });
+      const stage = this.gen ? this.gen.tierAt(w.p.x / 30) + 1 : 1;
+      r.text(`Stage ${stage}   ·   Best ${Math.max(best, 0)} m`, r.W / 2, 34 * s, 9 * s, { alpha: 0.85 });
     }
 
     drawEnd(cols) {

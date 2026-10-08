@@ -91,26 +91,7 @@
           this.starts.push(Object.assign({}, d.props || {}, src));
           continue;
         }
-        const o = {
-          id: objs.length, t: src.t, def: d, kind: d.kind, x: src.x, y: src.y,
-          r: src.r || 0, fx: !!src.fx, fy: !!src.fy, g: +src.g || 0, s: src.s || 1,
-          c: src.c || null, z: src.z || 0, ox: 0, oy: 0,
-        };
-        o.lh = GD.localHitbox(o, d);
-        if (d.slope) {
-          // slopes ignore rotation: it is folded into horizontal / vertical flips
-          const r = ((Math.round(o.r / 90) * 90) % 360 + 360) % 360;
-          let fx = o.fx, fy = o.fy;
-          if (r === 90 || r === 180) fx = !fx;
-          if (r === 270 || r === 180) fy = !fy;
-          o.lh = { k: 'r', x: 0, y: 0, w: d.slope.w * o.s, h: d.slope.h * o.s };
-          o.sl = true;
-          o.sRise = fx === fy;
-          o.sBelow = !fy;
-          o.sk = ((o.sRise ? 1 : -1) * d.slope.h) / d.slope.w;
-        }
-        o.vr = (d.vr || 30) * o.s;
-        objs.push(o);
+        objs.push(this.mkObj(src, d, objs.length));
       }
       trig.sort((a, b) => a.x - b.x);
       this.starts.sort((a, b) => a.x - b.x);
@@ -152,6 +133,66 @@
       for (const o of objs) mx = Math.max(mx, o.x);
       for (const t of trig) mx = Math.max(mx, t.x);
       this.endX = Math.max(mx + 330, 900);
+    }
+
+    /** Runtime object for a level object (hitbox, slope geometry). */
+    mkObj(src, d, id) {
+      const o = {
+        id, t: src.t, def: d, kind: d.kind, x: src.x, y: src.y,
+        r: src.r || 0, fx: !!src.fx, fy: !!src.fy, g: +src.g || 0, s: src.s || 1,
+        c: src.c || null, z: src.z || 0, ox: 0, oy: 0,
+      };
+      o.lh = GD.localHitbox(o, d);
+      if (d.slope) {
+        // slopes ignore rotation: it is folded into horizontal / vertical flips
+        const r = ((Math.round(o.r / 90) * 90) % 360 + 360) % 360;
+        let fx = o.fx, fy = o.fy;
+        if (r === 90 || r === 180) fx = !fx;
+        if (r === 270 || r === 180) fy = !fy;
+        o.lh = { k: 'r', x: 0, y: 0, w: d.slope.w * o.s, h: d.slope.h * o.s };
+        o.sl = true;
+        o.sRise = fx === fy;
+        o.sBelow = !fy;
+        o.sk = ((o.sRise ? 1 : -1) * d.slope.h) / d.slope.w;
+      }
+      o.vr = (d.vr || 30) * o.s;
+      return o;
+    }
+
+    /** Endless mode: add objects to the right of everything loaded so far (static objects and colour triggers only). */
+    append(list) {
+      const added = [];
+      for (const src of list) {
+        const d = OBJ[src.t];
+        if (!d || d.kind === 'start') continue;
+        if (d.kind === 'trigger') {
+          if (src.t !== 'tMove') this.triggers.push(Object.assign({}, d.props || {}, src));
+          continue;
+        }
+        const o = this.mkObj(src, d, this.objs.length);
+        o.g = 0;
+        o.dyn = false;
+        this.objs.push(o);
+        added.push(o);
+      }
+      this.triggers.sort((a, b) => a.x - b.x); // (the trigger index only moves forward; new ones are further right)
+      for (const [a, b] of GD.teleLinks(added)) a.link = b.id;
+      added.sort((a, b) => a.x - b.x);
+      for (const o of added) {
+        if (o.lh) this.updAbs(o, 0, 0);
+        this.maxVR = Math.max(this.maxVR, o.vr);
+        if (!o.lh || !CLS[o.kind]) continue;
+        const x0 = o.lh.k === 'r' ? o.x0 : o.cx - o.cr;
+        const x1 = o.lh.k === 'r' ? o.x1 : o.cx + o.cr;
+        for (let c = Math.floor(x0 / BW); c <= Math.floor(x1 / BW); c++) {
+          let b = this.bk.get(c);
+          if (!b) { b = { solid: [], hazard: [], inter: [] }; this.bk.set(c, b); }
+          b[CLS[o.kind]].push(o);
+        }
+      }
+      const last = this.rlist.length ? this.rlist[this.rlist.length - 1].x : -Infinity;
+      for (const o of added) this.rlist.push(o);
+      if (added.length && added[0].x < last) this.rlist.sort((a, b) => a.x - b.x);
     }
 
     updAbs(o, ox, oy) {

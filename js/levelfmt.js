@@ -106,6 +106,16 @@
     return out;
   };
 
+  /** Width of a map in columns (numbers + widest line of every ASCII segment). */
+  GD.mapWidth = function (map) {
+    let w = 0;
+    for (const e of flatten(map, [])) {
+      if (typeof e === 'number') w += e;
+      else if (typeof e === 'string') w += Math.max(0, ...dedent(e).map((l) => l.length));
+    }
+    return w;
+  };
+
   /** For debugging: where does each map entry start? */
   GD.mapSegments = function (map) {
     const segs = [];

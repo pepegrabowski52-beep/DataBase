@@ -102,6 +102,8 @@
     { id: 'harddemon', name: 'Sweet Dreams', desc: 'Complete the Hard Demon Nightmare', test: (s) => lvlDone(s, 'nightmare') },
     { id: 'insanedemon', name: 'Overclocked', desc: 'Complete the Insane Demon Overload', test: (s) => lvlDone(s, 'overload') },
     { id: 'extremedemon', name: 'Beyond the Horizon', desc: 'Complete the Extreme Demon Event Horizon', test: (s) => lvlDone(s, 'horizon') },
+    { id: 'endless500', name: 'Marathon', desc: 'Run 500 m in Endless mode', test: (s) => !!s.endless && s.endless.best >= 500 },
+    { id: 'endless2000', name: 'Ultra Marathon', desc: 'Run 2000 m in Endless mode', test: (s) => !!s.endless && s.endless.best >= 2000 },
     { id: 'gauntlet', name: 'Gauntlet Runner', desc: 'Complete a Gauntlet', test: (s) => (GD.GAUNTLETS || []).some((g) => g.levels.every((id) => lvlDone(s, id))) },
     { id: 'gauntlets', name: 'Gauntlet Master', desc: 'Complete every Gauntlet', test: (s) => (GD.GAUNTLETS || []).every((g) => g.levels.every((id) => lvlDone(s, id))) },
     { id: 'vault', name: 'Vault Hunter', desc: 'Find every secret code in the Vault', test: (s) => !!s.vault && ['lenny', 'spooky', 'royal', 'glitch'].every((k) => s.vault[k]) },
@@ -161,6 +163,8 @@
       for (const k of ['settings', 'icons', 'stats']) this.save[k] = Object.assign({}, d[k], this.save[k] || {});
       this.save.levels = this.save.levels || {};
       this.save.achievements = this.save.achievements || {};
+      const e = this.save.endless;
+      this.save.endless = { best: Math.floor(+(e && e.best) || 0), runs: Math.floor(+(e && e.runs) || 0) };
       const ul = U.store.get(USER_KEY, []);
       this.userLevels = (Array.isArray(ul) ? ul : []).filter((l) => l && typeof l === 'object').map((l) => {
         const c = GD.sanitizeLevel(l);
@@ -189,6 +193,9 @@
       if (o.vault && typeof o.vault === 'object') {
         s.vault = s.vault || {};
         for (const k of Object.keys(o.vault)) if (o.vault[k]) s.vault[k] = true;
+      }
+      if (o.endless && typeof o.endless === 'object') {
+        s.endless = { best: max(s.endless && s.endless.best, o.endless.best), runs: max(s.endless && s.endless.runs, o.endless.runs) };
       }
       for (const k of Object.keys(o.stats || {})) {
         const v = o.stats[k];
@@ -491,6 +498,14 @@
       this.scene = 'menu';
       GD.UI.show('creator');
       this.menuMusic();
+    },
+
+    /** Endless mode: an infinite generated level. */
+    startEndless() {
+      const T = GD.ENDLESS_TIERS[0];
+      const settings = Object.assign({}, GD.DEFAULT_SETTINGS, { bg: T.bg, g: T.g, song: 'endless', bgStyle: 'grid', gStyle: 'squares', mode: 'cube', spd: 1 });
+      GD.UI.show(null);
+      this.startLevel({ id: 'endless', name: 'Endless', level: { settings, objects: [] }, endless: true }, { returnTo: 'menu' });
     },
 
     builtinInfo(def) {

@@ -1,9 +1,9 @@
 /* Offline support: cache-first for the game files, network-first fallback for everything else. */
-const CACHE = 'gdweb-v3';
+const CACHE = 'gdweb-v4';
 const FILES = [
   './', 'index.html', 'css/style.css', 'icon.svg', 'manifest.webmanifest',
   'js/util.js', 'js/objects.js', 'js/levelfmt.js', 'js/engine.js', 'js/levels.js',
-  'js/levels/clockwork.js', 'js/levels/nightmare.js', 'js/levels/overload.js', 'js/levels/horizon.js', 'js/levels/challenge.js', 'js/icons.js',
+  'js/levels/clockwork.js', 'js/levels/nightmare.js', 'js/levels/overload.js', 'js/levels/horizon.js', 'js/levels/challenge.js', 'js/endless.js', 'js/endless-verified.js', 'js/icons.js',
   'js/render.js', 'js/audio.js', 'js/game.js', 'js/editor.js', 'js/ui.js', 'js/main.js',
 ];
 
