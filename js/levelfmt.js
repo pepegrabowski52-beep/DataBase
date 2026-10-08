@@ -189,7 +189,9 @@
     return gridToStr(grid);
   };
 
-  /** Zig-zag wave channel. o: {len, rows, width, seed, minSeg, maxSeg, slope, spikes} */
+  /** Zig-zag wave channel. o: {len, rows, width, seed, minSeg, maxSeg, slope, spikes, teeth}
+   *  teeth: small spikes in the middle of the segments, floor and ceiling in turn, so the wave cannot
+   *  slide along one wall of the whole channel with constant input. */
   GD.waveRun = function (o) {
     const rnd = GD.U.rng(o.seed || 1);
     const rows = o.rows || 10, w = o.width || 3, slope = o.slope || 1;
@@ -197,11 +199,14 @@
     let b = o.start == null ? Math.floor((rows - w) / 2) : o.start;
     let dir = 1, seg = 0;
     const flat = o.flat || 0;
+    const teeth = []; // [col, b, floor?]
+    let toothFloor = true;
     for (let c = 0; c < o.len; c++) {
       if (c >= (o.lead || 3) && c < o.len - (o.tail || 3)) {
         if (seg <= 0) {
           seg = (o.minSeg || 2) + Math.floor(rnd() * ((o.maxSeg || 5) - (o.minSeg || 2) + 1));
           dir = rnd() < flat ? 0 : b <= 1 ? 1 : b + w >= rows - 1 ? -1 : -dir || 1;
+          if (o.teeth && seg >= 2) { teeth.push({ at: c + (seg >> 1), floor: toothFloor }); toothFloor = !toothFloor; }
         }
         const nb = b + dir * slope;
         if (nb < 1 || nb + w > rows - 1) { seg = 0; dir = -dir; } else b = nb;
@@ -216,17 +221,25 @@
         if (dir > 0 && b - 1 - s >= 0) grid[b - 1 - s][c] = '#';
         if (dir < 0 && b + w + s < rows) grid[b + w + s][c] = '#';
       }
+      const t = teeth.find((x) => x.at === c);
+      if (t && c >= (o.open == null ? 2 : o.open) && c < o.len - (o.openEnd == null ? 2 : o.openEnd)) {
+        grid[t.floor ? b : b + w - 1][c] = t.floor ? ',' : '`';
+      }
     }
     return gridToStr(grid);
   };
 
-  /** Wave corridor made of 45° slopes: floor and ceiling run parallel, `width` rows apart. */
+  /** Wave corridor made of 45° slopes: floor and ceiling run parallel, `width` rows apart.
+   *  The wave can slide along slopes, so with `teeth: true` small spikes sit on the flat stretches,
+   *  alternating floor / ceiling: riding one surface the whole way (constant input) then crashes. */
   GD.slopeWave = function (o) {
     const rnd = GD.U.rng(o.seed || 1);
     const rows = o.rows || 10, w = o.width || 3;
     const grid = newGrid(rows, o.len);
     let F = o.start == null ? Math.floor((rows - w) / 2) : o.start;
     let d = 0, seg = 0;
+    if (o.teeth && o.flat == null) o = Object.assign({}, o, { flat: 0.35 });
+    const flats = []; // [col, F] of flat columns
     const open = o.open == null ? 3 : o.open, openEnd = o.openEnd == null ? 2 : o.openEnd;
     const put = (r, c, ch) => { if (r >= 0 && r < rows) grid[r][c] = ch; };
     for (let c = 0; c < o.len; c++) {
@@ -251,9 +264,24 @@
       } else {
         put(F - 1, c, '#');
         put(C, c, '#');
+        flats.push([c, F]);
       }
       F += d;
       seg--;
+    }
+    if (o.teeth) {
+      // one small spike per run of flat columns, on the floor and the ceiling in turn
+      let floor = true;
+      for (let i = 0; i < flats.length; ) {
+        let j = i;
+        while (j + 1 < flats.length && flats[j + 1][0] === flats[j][0] + 1 && flats[j + 1][1] === flats[i][1]) j++;
+        if (j > i) {
+          const [c, f] = flats[(i + j) >> 1];
+          put(floor ? f : f + w - 1, c, floor ? ',' : '`');
+          floor = !floor;
+        }
+        i = j + 1;
+      }
     }
     return gridToStr(grid);
   };
