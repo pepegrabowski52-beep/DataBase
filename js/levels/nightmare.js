@@ -21,6 +21,13 @@
     }
     return g.map((r) => r.join('')).join('\n');
   };
+  // dual sections: a slab divider along the top row of a lower half (GD.sym mirrors it to the bottom of the upper half),
+  // so each of the two players stays in its own half
+  const divided = (lower, c0, c1) => {
+    const L = lower.split('\n');
+    L[0] = L[0].split('').map((ch, c) => (c >= c0 && c < c1 && ch === '.' ? '=' : ch)).join('');
+    return L.join('\n');
+  };
 
   GD.addLevel({
     id: 'nightmare', name: 'Nightmare', diff: 'harddemon', stars: 13, color: '#5a1a7a', song: 'nightmare',
@@ -77,7 +84,7 @@
         ...............................................................
         ..o.....................o......................................
         ...............................................................
-        .^^^^^^^^^^^^^^^^......^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...^^^.
+        .^^^^^^^^^^^^^^^^......^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^....^^^.
         `,
         10,
       ],
@@ -191,10 +198,10 @@
         ..^^...........^^^..........^^..........^^^...
         `,
       ],
-      // [7] dual ship 2x
+      // [7] dual ship 2x: a divider keeps each ship in its half
       [
         stack('S'),
-        GD.sym(GD.gates({ len: 48, rows: 5, seed: 1736, gap: 3, every: 6, maxStep: 1 })),
+        GD.sym(divided(GD.gates({ len: 48, rows: 5, seed: 1736, gap: 3, every: 6, maxStep: 1 }), 0, 46)),
         stack('I'),
         GD.gates({ len: 14, seed: 1737, gap: 3, every: 5, maxStep: 2 }),
         exit('C'),
@@ -205,7 +212,7 @@
         shift('#360414', '#120208', '#ff2050'),
         spd('3'),
         mirror('Z'),
-        6,
+        10,
         '^^^^',
         9,
         `
@@ -254,15 +261,15 @@
         ............###.....##..........###......##...............##...............
         ..^^^##^^^^^###^^^^^##^^^^#^^^^^###^^^^^^##^^^##^^^^##^^^^##^^^^^##^^^^....
         `,
-        6,
+        2,
         mirror('z'),
-        4,
+        8,
       ],
-      // [11] wave 3x: slope corridor, then mini wave
+      // [11] wave 3x: stepped block channel (a slope channel would let the wave ride its floor or ceiling), then mini wave
       [
         shift('#14032c', '#06020c', '#b040ff'),
         enter('V'),
-        walled(GD.slopeWave({ len: 50, seed: 1741, width: 2, start: 1 })),
+        walled(GD.waveRun({ len: 50, seed: 1741, width: 3, open: 3, fill: true, start: 1 })),
         stack('m'),
         GD.waveRun({ len: 34, seed: 1742, width: 4, slope: 2, open: 3, fill: true }),
         stack('M'),
